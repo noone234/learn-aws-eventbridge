@@ -1,18 +1,43 @@
+"""CDK Stack for Order Processing with EventBridge."""
+from typing import Any
+
 from aws_cdk import (
+    Duration,
     Stack,
-    aws_lambda as lambda_,
+    Tags,
     aws_apigateway as apigateway,
+    aws_cloudwatch as cloudwatch,
+    aws_cloudwatch_actions as cw_actions,
     aws_events as events,
     aws_events_targets as targets,
+    aws_lambda as lambda_,
+    aws_sns as sns,
     aws_sqs as sqs,
-    aws_iam as iam,
-    Duration,
 )
 from constructs import Construct
 
 
 class OrderProcessingStack(Stack):
-    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
+    """
+    CDK Stack that creates an event-driven order processing system.
+
+    This stack creates:
+    - API Gateway with POST /orders endpoint
+    - Lambda function to receive orders and publish to EventBridge
+    - Custom EventBridge bus for order events
+    - Two Lambda functions to consume events (notifier and marketplace)
+    - SQS queue for email notifications
+    """
+
+    def __init__(self, scope: Construct, construct_id: str, **kwargs: Any) -> None:
+        """
+        Initialize the Order Processing Stack.
+
+        Args:
+            scope: CDK app scope
+            construct_id: Unique identifier for this stack
+            **kwargs: Additional stack properties
+        """
         super().__init__(scope, construct_id, **kwargs)
 
         # Create custom EventBridge bus
@@ -112,3 +137,69 @@ class OrderProcessingStack(Stack):
         )
 
         orders_resource.add_method("POST", integration)
+
+        # Create SNS topic for alarm notifications
+        alarm_topic = sns.Topic(
+            self,
+            "AlarmTopic",
+            topic_name="order-processing-alarms",
+            display_name="Order Processing Alarms",
+        )
+
+        # CloudWatch Alarms for Lambda errors
+        order_receiver_error_alarm = cloudwatch.Alarm(
+            self,
+            "OrderReceiverErrorAlarm",
+            alarm_name="order-receiver-errors",
+            alarm_description="Alert when order-receiver Lambda has errors",
+            metric=order_receiver_fn.metric_errors(period=Duration.minutes(5)),
+            threshold=1,
+            evaluation_periods=1,
+            comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+        )
+        order_receiver_error_alarm.add_alarm_action(cw_actions.SnsAction(alarm_topic))
+
+        notifier_error_alarm = cloudwatch.Alarm(
+            self,
+            "NotifierErrorAlarm",
+            alarm_name="notifier-errors",
+            alarm_description="Alert when notifier Lambda has errors",
+            metric=notifier_fn.metric_errors(period=Duration.minutes(5)),
+            threshold=1,
+            evaluation_periods=1,
+            comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+        )
+        notifier_error_alarm.add_alarm_action(cw_actions.SnsAction(alarm_topic))
+
+        marketplace_error_alarm = cloudwatch.Alarm(
+            self,
+            "MarketplaceErrorAlarm",
+            alarm_name="marketplace-errors",
+            alarm_description="Alert when marketplace Lambda has errors",
+            metric=marketplace_fn.metric_errors(period=Duration.minutes(5)),
+            threshold=1,
+            evaluation_periods=1,
+            comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+        )
+        marketplace_error_alarm.add_alarm_action(cw_actions.SnsAction(alarm_topic))
+
+        # CloudWatch Alarm for SQS queue depth
+        queue_depth_alarm = cloudwatch.Alarm(
+            self,
+            "QueueDepthAlarm",
+            alarm_name="email-queue-depth",
+            alarm_description="Alert when email queue has too many messages",
+            metric=email_queue.metric_approximate_number_of_messages_visible(
+                period=Duration.minutes(5)
+            ),
+            threshold=100,
+            evaluation_periods=2,
+            comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+        )
+        queue_depth_alarm.add_alarm_action(cw_actions.SnsAction(alarm_topic))
+
+        # Add cost allocation tags
+        Tags.of(self).add("Project", "OrderProcessing")
+        Tags.of(self).add("Environment", "Demo")
+        Tags.of(self).add("ManagedBy", "CDK")
+        Tags.of(self).add("CostCenter", "Engineering")

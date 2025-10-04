@@ -1,43 +1,83 @@
 import json
-import os
-import boto3
 import logging
+import os
+from typing import Any, Dict
 
+import boto3
+
+# Configure structured logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-sqs = boto3.client('sqs')
-QUEUE_URL = os.environ['QUEUE_URL']
+sqs = boto3.client("sqs")
+QUEUE_URL = os.environ["QUEUE_URL"]
 
 
-def handler(event, context):
+def log_structured(level: str, message: str, **kwargs: Any) -> None:
+    """Log structured JSON messages for better CloudWatch querying."""
+    log_entry = {"level": level, "message": message, **kwargs}
+    logger.log(getattr(logging, level.upper()), json.dumps(log_entry))
+
+
+def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """
     Receives order event from EventBridge and queues it for email notification.
     This simulates notifying the Sales team via email by placing the event in an SQS queue.
+
+    Args:
+        event: EventBridge event containing the order detail
+        context: Lambda context object
+
+    Returns:
+        Response dictionary with status code and body
     """
+    request_id = context.request_id if hasattr(context, "request_id") else "unknown"
+
     # Log the event received from EventBridge
-    logger.info(f"Notifier received event: {json.dumps(event)}")
+    log_structured("info", "Notifier received event", request_id=request_id, event=event)
 
     # Extract the detail from the EventBridge event
-    detail = event.get('detail', {})
-    logger.info(f"Order detail for notification: {json.dumps(detail)}")
+    detail = event.get("detail", {})
+    order_id = detail.get("orderId", "unknown")
+    log_structured(
+        "info",
+        "Processing order for notification",
+        request_id=request_id,
+        order_id=order_id,
+        detail=detail,
+    )
 
     # Send message to SQS queue for email processing
     try:
-        response = sqs.send_message(
-            QueueUrl=QUEUE_URL,
-            MessageBody=json.dumps({
-                'recipient': 'sales@example.com',
-                'subject': f"New Order Received: {detail.get('orderId', 'unknown')}",
-                'orderData': detail
-            })
+        email_message = {
+            "recipient": "sales@example.com",
+            "subject": f"New Order Received: {order_id}",
+            "orderData": detail,
+        }
+        response = sqs.send_message(QueueUrl=QUEUE_URL, MessageBody=json.dumps(email_message))
+        message_id = response["MessageId"]
+        log_structured(
+            "info",
+            "Message sent to SQS queue",
+            request_id=request_id,
+            order_id=order_id,
+            message_id=message_id,
         )
-        logger.info(f"Message sent to SQS queue: {response['MessageId']}")
     except Exception as e:
-        logger.error(f"Error sending message to SQS: {str(e)}")
+        log_structured(
+            "error",
+            "Error sending message to SQS",
+            request_id=request_id,
+            order_id=order_id,
+            error=str(e),
+            error_type=type(e).__name__,
+        )
         raise
 
-    return {
-        'statusCode': 200,
-        'body': json.dumps({'message': 'Notification queued successfully'})
-    }
+    log_structured(
+        "info",
+        "Notification queued successfully",
+        request_id=request_id,
+        order_id=order_id,
+    )
+    return {"statusCode": 200, "body": json.dumps({"message": "Notification queued successfully"})}
