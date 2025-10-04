@@ -189,13 +189,47 @@ on:
   workflow_dispatch:   # Keep this for manual triggers
 ```
 
-# Support
+# Documentation
 
-## Documentation
+## Project Documentation
 
-## Resources
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Detailed architecture diagrams, event schemas, and design patterns
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Development guidelines and best practices
 
-If you have questions, get stuck or need help, consider reaching out to your local AWS User Group. Part of their mission is to help you learn from others who are actually using AWS.
+## AWS Documentation
+
+- **[Amazon EventBridge User Guide](https://docs.aws.amazon.com/eventbridge/latest/userguide/)** - Official AWS EventBridge documentation
+- **[AWS CDK Python Reference](https://docs.aws.amazon.com/cdk/api/v2/python/)** - CDK API documentation for Python
+- **[AWS Lambda Developer Guide](https://docs.aws.amazon.com/lambda/latest/dg/)** - Lambda best practices and documentation
+- **[AWS CloudWatch Logs Insights](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/AnalyzingLogData.html)** - Query structured logs
+
+## Learning Resources
+
+- Find your local [AWS User Group](https://aws.amazon.com/developer/community/usergroups/) to connect with others using AWS
+- [AWS EventBridge Workshop](https://catalog.workshops.aws/eventbridge) - Hands-on EventBridge exercises
+- [Serverless Land](https://serverlessland.com/patterns?services=eventbridge) - EventBridge patterns and examples
+
+# About This Project
+
+This repository was created for an AWS User Group presentation on event-driven architecture. It's intended as a **learning resource and demo**, not production software.
+
+## Support
+
+This is educational demonstration code shared with the community. While we hope you find it useful:
+
+- **No warranty or support is provided** - Use at your own risk
+- **No bug fixes or enhancements planned** - This code demonstrates concepts from a specific presentation
+- **Not actively maintained** - Feel free to fork and adapt for your own learning
+
+## Getting Help
+
+If you're learning AWS and EventBridge:
+- Review the [AWS Documentation](#aws-documentation) above
+- Check out the [Learning Resources](#learning-resources) section
+- Reach out to your local AWS User Group for community support
+- Explore AWS's official [re:Post](https://repost.aws/) community forums
+
+This demo is meant to inspire your own experiments and learning!
 
 # Notice
 
