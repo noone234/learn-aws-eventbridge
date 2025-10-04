@@ -1,7 +1,21 @@
-# Introduction
+# Building Event-Driven Architecture with AWS EventBridge
 
-This code sample was used in an AWS User Group Presentation
-titled "Building Event-Driven Architecture with AWS EventBridge".
+Welcome! This is a hands-on demo that shows you how to build event-driven applications using AWS EventBridge.
+
+**What you'll learn:**
+- How to publish events from an API to EventBridge
+- How to route events to multiple consumers using EventBridge rules
+- How to build decoupled, scalable microservices
+- Production-ready practices: structured logging, testing, CI/CD, and monitoring
+
+**What's included:**
+- A working order processing system with API Gateway, Lambda, EventBridge, and SQS
+- Complete infrastructure-as-code using AWS CDK (Python)
+- Unit tests, linting, type checking, and security scans
+- GitHub Actions for automated deployment
+- CloudWatch alarms and structured logging for observability
+
+This demo was originally created for an AWS User Group presentation. Whether you're new to EventBridge or looking for best practices, you can deploy this to your AWS account in minutes and start experimenting!
 
 # Architecture
 
