@@ -107,47 +107,68 @@ The deployment workflow can deploy the stack to AWS automatically:
 - **Automatic**: Triggers on pushes to `main` branch
 - **Manual**: Can be triggered via the "Actions" tab in GitHub
 
-#### Setting Up GitHub Secrets
+#### Setting Up AWS Authentication
 
-To enable automated deployments, you need to configure AWS credentials as GitHub secrets:
+You have two options for authenticating GitHub Actions with AWS:
 
-1. **Go to your GitHub repository** → Settings → Secrets and variables → Actions
+##### Option 1: OIDC with IAM Role (Recommended - More Secure)
 
-2. **Add the following secrets:**
+This method uses temporary credentials and doesn't require storing AWS access keys in GitHub.
 
-   - `AWS_ACCESS_KEY_ID`
-     - Your AWS access key ID
-     - Create via AWS Console → IAM → Users → Security credentials
+1. **Deploy the OIDC Stack (one-time setup):**
 
-   - `AWS_SECRET_ACCESS_KEY`
-     - Your AWS secret access key
-     - Generated when you create the access key
-
-   - `AWS_REGION` (optional, defaults to `us-east-1`)
-     - The AWS region to deploy to (e.g., `us-east-1`, `us-west-2`)
-
-3. **IAM Permissions Required:**
-
-   The AWS credentials need permissions to:
-   - Deploy CloudFormation stacks
-   - Create/manage Lambda functions
-   - Create/manage API Gateway
-   - Create/manage EventBridge resources
-   - Create/manage SQS queues
-   - Create/manage SNS topics
-   - Create/manage CloudWatch alarms
-   - Create/manage IAM roles (for Lambda execution)
-
-   For simplicity in a demo environment, you can use `AdministratorAccess` policy. For production, create a custom policy with only the required permissions.
-
-4. **Bootstrap CDK (one-time setup):**
-
-   Before the first deployment, bootstrap CDK in your AWS account:
    ```bash
-   cdk bootstrap aws://ACCOUNT-ID/REGION
+   # Install dependencies
+   pip install -r requirements.txt
+
+   # Option A: Using Makefile (easier)
+   make setup-github GITHUB_ORG=myusername GITHUB_REPO=learn-aws-eventbridge
+
+   # Option B: Using CDK directly
+   cdk deploy -a "python setup_github_oidc.py myusername learn-aws-eventbridge"
    ```
 
-   Or let the GitHub Actions workflow do it automatically (it runs `cdk bootstrap` as part of deployment).
+2. **Copy the Role ARN from the output**
+
+   The deployment will output a Role ARN like:
+   ```
+   arn:aws:iam::123456789012:role/GitHubActionsDeploymentRole
+   ```
+
+3. **Add GitHub Secret:**
+
+   - Go to your GitHub repository → Settings → Secrets and variables → Actions
+   - Click "New repository secret"
+   - Name: `AWS_ROLE_ARN`
+   - Value: The Role ARN from step 2
+   - (Optional) Add `AWS_REGION` if not using `us-east-1`
+
+4. **Done!** GitHub Actions will now use OIDC to assume the role.
+
+##### Option 2: Access Keys (Simple but Less Secure)
+
+If you prefer simplicity over security for a demo:
+
+1. **Create IAM User:**
+   - AWS Console → IAM → Users → Create user
+   - Attach `AdministratorAccess` policy (demo only!)
+   - Create access key → "Application running outside AWS"
+
+2. **Add GitHub Secrets:**
+
+   Go to GitHub repository → Settings → Secrets and variables → Actions
+
+   Add these secrets:
+   - `AWS_ACCESS_KEY_ID`: Your access key ID
+   - `AWS_SECRET_ACCESS_KEY`: Your secret access key
+   - `AWS_REGION` (optional, defaults to `us-east-1`)
+
+3. **Bootstrap CDK (one-time):**
+   ```bash
+   cdk bootstrap
+   ```
+
+**Note:** The workflow automatically detects which method you're using based on whether `AWS_ROLE_ARN` secret exists.
 
 #### Manual Deployment via GitHub Actions
 
