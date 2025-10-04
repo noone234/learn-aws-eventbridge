@@ -88,6 +88,86 @@ On your computer:
 
 We assume that you know your way around AWS CloudWatch and observability tools.
 
+## GitHub Actions Deployment
+
+This repository includes automated CI/CD workflows via GitHub Actions.
+
+### CI Workflow
+
+The CI workflow runs automatically on all pushes and pull requests:
+- Linting (ruff, black)
+- Type checking (mypy)
+- Security scans (bandit, safety)
+- Unit tests with coverage
+- CDK diff on pull requests (if AWS credentials are configured)
+
+### Deployment Workflow
+
+The deployment workflow can deploy the stack to AWS automatically:
+- **Automatic**: Triggers on pushes to `main` branch
+- **Manual**: Can be triggered via the "Actions" tab in GitHub
+
+#### Setting Up GitHub Secrets
+
+To enable automated deployments, you need to configure AWS credentials as GitHub secrets:
+
+1. **Go to your GitHub repository** → Settings → Secrets and variables → Actions
+
+2. **Add the following secrets:**
+
+   - `AWS_ACCESS_KEY_ID`
+     - Your AWS access key ID
+     - Create via AWS Console → IAM → Users → Security credentials
+
+   - `AWS_SECRET_ACCESS_KEY`
+     - Your AWS secret access key
+     - Generated when you create the access key
+
+   - `AWS_REGION` (optional, defaults to `us-east-1`)
+     - The AWS region to deploy to (e.g., `us-east-1`, `us-west-2`)
+
+3. **IAM Permissions Required:**
+
+   The AWS credentials need permissions to:
+   - Deploy CloudFormation stacks
+   - Create/manage Lambda functions
+   - Create/manage API Gateway
+   - Create/manage EventBridge resources
+   - Create/manage SQS queues
+   - Create/manage SNS topics
+   - Create/manage CloudWatch alarms
+   - Create/manage IAM roles (for Lambda execution)
+
+   For simplicity in a demo environment, you can use `AdministratorAccess` policy. For production, create a custom policy with only the required permissions.
+
+4. **Bootstrap CDK (one-time setup):**
+
+   Before the first deployment, bootstrap CDK in your AWS account:
+   ```bash
+   cdk bootstrap aws://ACCOUNT-ID/REGION
+   ```
+
+   Or let the GitHub Actions workflow do it automatically (it runs `cdk bootstrap` as part of deployment).
+
+#### Manual Deployment via GitHub Actions
+
+1. Go to the "Actions" tab in your GitHub repository
+2. Select "Deploy to AWS" workflow
+3. Click "Run workflow" → select branch `main` → Click "Run workflow" button
+
+The workflow will output the API Gateway URL in the deployment summary.
+
+#### Disable Automated Deployments
+
+If you don't want automatic deployments on every push to `main`, edit `.github/workflows/deploy.yml` and remove the `push:` trigger:
+
+```yaml
+on:
+  # push:              # Comment this out
+  #   branches: [main] # to disable auto-deploy
+  workflow_dispatch:   # Keep this for manual triggers
+```
+
 # Support
 
 ## Documentation

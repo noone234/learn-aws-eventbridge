@@ -2,6 +2,7 @@
 from typing import Any
 
 from aws_cdk import (
+    CfnOutput,
     Duration,
     Stack,
     Tags,
@@ -203,3 +204,20 @@ class OrderProcessingStack(Stack):
         Tags.of(self).add("Environment", "Demo")
         Tags.of(self).add("ManagedBy", "CDK")
         Tags.of(self).add("CostCenter", "Engineering")
+
+        # Stack outputs
+        CfnOutput(
+            self,
+            "OrdersApiEndpoint",
+            value=api.url,
+            description="API Gateway endpoint URL for POST /orders",
+            export_name="OrderProcessingApiUrl",
+        )
+
+        CfnOutput(
+            self,
+            "AlarmTopicArn",
+            value=alarm_topic.topic_arn,
+            description="SNS topic ARN for CloudWatch alarms",
+            export_name="OrderProcessingAlarmTopicArn",
+        )
