@@ -11,14 +11,16 @@ from moto import mock_aws
 os.environ["EVENT_BUS_NAME"] = "test-event-bus"
 
 # Import after setting env vars
+import importlib.util
 import sys
 from pathlib import Path
 
-# Add the Lambda function to the path
-lambda_path = Path(__file__).parent.parent.parent / "lambdas" / "order_receiver"
-sys.path.insert(0, str(lambda_path))
-
-import index  # noqa: E402
+# Load the Lambda function module dynamically
+lambda_path = Path(__file__).parent.parent.parent / "lambdas" / "order_receiver" / "index.py"
+spec = importlib.util.spec_from_file_location("order_receiver_index", lambda_path)
+index = importlib.util.module_from_spec(spec)
+sys.modules["order_receiver_index"] = index
+spec.loader.exec_module(index)
 
 
 @pytest.fixture

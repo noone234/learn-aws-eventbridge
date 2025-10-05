@@ -1,4 +1,5 @@
 """Unit tests for marketplace Lambda function."""
+import importlib.util
 import json
 import sys
 from pathlib import Path
@@ -7,11 +8,12 @@ from unittest.mock import MagicMock
 
 import pytest
 
-# Add the Lambda function to the path
-lambda_path = Path(__file__).parent.parent.parent / "lambdas" / "marketplace"
-sys.path.insert(0, str(lambda_path))
-
-import index  # noqa: E402
+# Load the Lambda function module dynamically
+lambda_path = Path(__file__).parent.parent.parent / "lambdas" / "marketplace" / "index.py"
+spec = importlib.util.spec_from_file_location("marketplace_index", lambda_path)
+index = importlib.util.module_from_spec(spec)
+sys.modules["marketplace_index"] = index
+spec.loader.exec_module(index)
 
 
 @pytest.fixture

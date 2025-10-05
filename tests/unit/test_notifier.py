@@ -11,14 +11,16 @@ from moto import mock_aws
 os.environ["QUEUE_URL"] = "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue"
 
 # Import after setting env vars
+import importlib.util
 import sys
 from pathlib import Path
 
-# Add the Lambda function to the path
-lambda_path = Path(__file__).parent.parent.parent / "lambdas" / "notifier"
-sys.path.insert(0, str(lambda_path))
-
-import index  # noqa: E402
+# Load the Lambda function module dynamically
+lambda_path = Path(__file__).parent.parent.parent / "lambdas" / "notifier" / "index.py"
+spec = importlib.util.spec_from_file_location("notifier_index", lambda_path)
+index = importlib.util.module_from_spec(spec)
+sys.modules["notifier_index"] = index
+spec.loader.exec_module(index)
 
 
 @pytest.fixture
