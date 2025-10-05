@@ -194,32 +194,7 @@ pre-commit run --all-files
    make all-checks
    ```
 4. **Update ARCHITECTURE.md** if you're changing the architecture
-5. **Create a pull request** with a clear description of changes
-
-### Pull Request Template
-
-```markdown
-## Description
-Brief description of changes
-
-## Type of Change
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Breaking change
-- [ ] Documentation update
-
-## Testing
-- [ ] Unit tests pass
-- [ ] Integration tests pass (if applicable)
-- [ ] Manual testing performed
-
-## Checklist
-- [ ] Code follows style guidelines
-- [ ] Self-review completed
-- [ ] Documentation updated
-- [ ] Tests added/updated
-- [ ] All checks pass
-```
+5. **Create a pull request** - GitHub will automatically populate a PR template with checklist items
 
 ## Common Tasks
 
