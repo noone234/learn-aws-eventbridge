@@ -217,6 +217,12 @@ on:
 - **[AWS Lambda Developer Guide](https://docs.aws.amazon.com/lambda/latest/dg/)** - Lambda best practices and documentation
 - **[AWS CloudWatch Logs Insights](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/AnalyzingLogData.html)** - Query structured logs
 
+### Event-Driven Architecture Patterns
+
+- **[Publish-Subscribe Pattern](https://docs.aws.amazon.com/prescriptive-guidance/latest/modernization-integrating-microservices/pub-sub.html)** - AWS Prescriptive Guidance for pub/sub messaging
+- **[Choreography Pattern](https://docs.aws.amazon.com/prescriptive-guidance/latest/modernization-integrating-microservices/choreography.html)** - Event-driven choreography for microservices
+- **[Orchestration Pattern](https://docs.aws.amazon.com/prescriptive-guidance/latest/modernization-integrating-microservices/orchestration.html)** - Centralized orchestration with Step Functions
+
 ## Learning Resources
 
 - Find your local [AWS User Group](https://aws.amazon.com/developer/community/usergroups/) to connect with others using AWS
