@@ -1,0 +1,1481 @@
+{
+ "Resources": {
+  "OrderProcessingBus96E0D202": {
+   "Type": "AWS::Events::EventBus",
+   "Properties": {
+    "Name": "order-processing-bus",
+    "Tags": [
+     {
+      "Key": "CostCenter",
+      "Value": "Engineering"
+     },
+     {
+      "Key": "Environment",
+      "Value": "Demo"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "OrderProcessing"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/OrderProcessingBus/Resource"
+   }
+  },
+  "EmailQueue9C1DA90F": {
+   "Type": "AWS::SQS::Queue",
+   "Properties": {
+    "QueueName": "order-notifications-queue",
+    "Tags": [
+     {
+      "Key": "CostCenter",
+      "Value": "Engineering"
+     },
+     {
+      "Key": "Environment",
+      "Value": "Demo"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "OrderProcessing"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/EmailQueue/Resource"
+   }
+  },
+  "OrderReceiverFunctionServiceRoleE9D68F66": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "CostCenter",
+      "Value": "Engineering"
+     },
+     {
+      "Key": "Environment",
+      "Value": "Demo"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "OrderProcessing"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/OrderReceiverFunction/ServiceRole/Resource"
+   }
+  },
+  "OrderReceiverFunctionServiceRoleDefaultPolicy46B14896": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "events:PutEvents",
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "OrderProcessingBus96E0D202",
+         "Arn"
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "OrderReceiverFunctionServiceRoleDefaultPolicy46B14896",
+    "Roles": [
+     {
+      "Ref": "OrderReceiverFunctionServiceRoleE9D68F66"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/OrderReceiverFunction/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "OrderReceiverFunctionB8982A50": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": {
+      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+     },
+     "S3Key": "da51c809bdce4853b8a0352aa78a0a5a4fed7e5720663079458c9e3144741be3.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "EVENT_BUS_NAME": {
+       "Ref": "OrderProcessingBus96E0D202"
+      }
+     }
+    },
+    "FunctionName": "order-receiver",
+    "Handler": "index.handler",
+    "Role": {
+     "Fn::GetAtt": [
+      "OrderReceiverFunctionServiceRoleE9D68F66",
+      "Arn"
+     ]
+    },
+    "Runtime": "python3.13",
+    "Tags": [
+     {
+      "Key": "CostCenter",
+      "Value": "Engineering"
+     },
+     {
+      "Key": "Environment",
+      "Value": "Demo"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "OrderProcessing"
+     }
+    ],
+    "Timeout": 30
+   },
+   "DependsOn": [
+    "OrderReceiverFunctionServiceRoleDefaultPolicy46B14896",
+    "OrderReceiverFunctionServiceRoleE9D68F66"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/OrderReceiverFunction/Resource",
+    "aws:asset:path": "asset.da51c809bdce4853b8a0352aa78a0a5a4fed7e5720663079458c9e3144741be3",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "NotifierFunctionServiceRole124F1226": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "CostCenter",
+      "Value": "Engineering"
+     },
+     {
+      "Key": "Environment",
+      "Value": "Demo"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "OrderProcessing"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/NotifierFunction/ServiceRole/Resource"
+   }
+  },
+  "NotifierFunctionServiceRoleDefaultPolicyDFAFB18E": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "sqs:GetQueueAttributes",
+        "sqs:GetQueueUrl",
+        "sqs:SendMessage"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "EmailQueue9C1DA90F",
+         "Arn"
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "NotifierFunctionServiceRoleDefaultPolicyDFAFB18E",
+    "Roles": [
+     {
+      "Ref": "NotifierFunctionServiceRole124F1226"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/NotifierFunction/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "NotifierFunctionEB33F81B": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": {
+      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+     },
+     "S3Key": "d67c4f020c8d25ad7442cd11b8b428c6fd383e88c4222fd484ceff7ffca40446.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "QUEUE_URL": {
+       "Ref": "EmailQueue9C1DA90F"
+      }
+     }
+    },
+    "FunctionName": "notifier",
+    "Handler": "index.handler",
+    "Role": {
+     "Fn::GetAtt": [
+      "NotifierFunctionServiceRole124F1226",
+      "Arn"
+     ]
+    },
+    "Runtime": "python3.13",
+    "Tags": [
+     {
+      "Key": "CostCenter",
+      "Value": "Engineering"
+     },
+     {
+      "Key": "Environment",
+      "Value": "Demo"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "OrderProcessing"
+     }
+    ],
+    "Timeout": 30
+   },
+   "DependsOn": [
+    "NotifierFunctionServiceRoleDefaultPolicyDFAFB18E",
+    "NotifierFunctionServiceRole124F1226"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/NotifierFunction/Resource",
+    "aws:asset:path": "asset.d67c4f020c8d25ad7442cd11b8b428c6fd383e88c4222fd484ceff7ffca40446",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "MarketplaceFunctionServiceRoleECD3A385": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "CostCenter",
+      "Value": "Engineering"
+     },
+     {
+      "Key": "Environment",
+      "Value": "Demo"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "OrderProcessing"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/MarketplaceFunction/ServiceRole/Resource"
+   }
+  },
+  "MarketplaceFunction6A622C06": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": {
+      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+     },
+     "S3Key": "be795029a19833402946bd961ae3f219996f9ee2bcb8d34bf906e22cab7d618a.zip"
+    },
+    "FunctionName": "marketplace",
+    "Handler": "index.handler",
+    "Role": {
+     "Fn::GetAtt": [
+      "MarketplaceFunctionServiceRoleECD3A385",
+      "Arn"
+     ]
+    },
+    "Runtime": "python3.13",
+    "Tags": [
+     {
+      "Key": "CostCenter",
+      "Value": "Engineering"
+     },
+     {
+      "Key": "Environment",
+      "Value": "Demo"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "OrderProcessing"
+     }
+    ],
+    "Timeout": 30
+   },
+   "DependsOn": [
+    "MarketplaceFunctionServiceRoleECD3A385"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/MarketplaceFunction/Resource",
+    "aws:asset:path": "asset.be795029a19833402946bd961ae3f219996f9ee2bcb8d34bf906e22cab7d618a",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "NotifierRule2EAE52D5": {
+   "Type": "AWS::Events::Rule",
+   "Properties": {
+    "EventBusName": {
+     "Ref": "OrderProcessingBus96E0D202"
+    },
+    "EventPattern": {
+     "detail-type": [
+      "order.received.v1"
+     ],
+     "source": [
+      "public.api"
+     ]
+    },
+    "Name": "route-to-notifier",
+    "State": "ENABLED",
+    "Tags": [
+     {
+      "Key": "CostCenter",
+      "Value": "Engineering"
+     },
+     {
+      "Key": "Environment",
+      "Value": "Demo"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "OrderProcessing"
+     }
+    ],
+    "Targets": [
+     {
+      "Arn": {
+       "Fn::GetAtt": [
+        "NotifierFunctionEB33F81B",
+        "Arn"
+       ]
+      },
+      "Id": "Target0"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/NotifierRule/Resource"
+   }
+  },
+  "NotifierRuleAllowEventRuleOrderProcessingStackNotifierFunctionD4F0886C12D01D5B": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "NotifierFunctionEB33F81B",
+      "Arn"
+     ]
+    },
+    "Principal": "events.amazonaws.com",
+    "SourceArn": {
+     "Fn::GetAtt": [
+      "NotifierRule2EAE52D5",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/NotifierRule/AllowEventRuleOrderProcessingStackNotifierFunctionD4F0886C"
+   }
+  },
+  "MarketplaceRuleE05AD4A8": {
+   "Type": "AWS::Events::Rule",
+   "Properties": {
+    "EventBusName": {
+     "Ref": "OrderProcessingBus96E0D202"
+    },
+    "EventPattern": {
+     "detail-type": [
+      "order.received.v1"
+     ],
+     "source": [
+      "public.api"
+     ]
+    },
+    "Name": "route-to-marketplace",
+    "State": "ENABLED",
+    "Tags": [
+     {
+      "Key": "CostCenter",
+      "Value": "Engineering"
+     },
+     {
+      "Key": "Environment",
+      "Value": "Demo"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "OrderProcessing"
+     }
+    ],
+    "Targets": [
+     {
+      "Arn": {
+       "Fn::GetAtt": [
+        "MarketplaceFunction6A622C06",
+        "Arn"
+       ]
+      },
+      "Id": "Target0"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/MarketplaceRule/Resource"
+   }
+  },
+  "MarketplaceRuleAllowEventRuleOrderProcessingStackMarketplaceFunction90F6E605FF225201": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "MarketplaceFunction6A622C06",
+      "Arn"
+     ]
+    },
+    "Principal": "events.amazonaws.com",
+    "SourceArn": {
+     "Fn::GetAtt": [
+      "MarketplaceRuleE05AD4A8",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/MarketplaceRule/AllowEventRuleOrderProcessingStackMarketplaceFunction90F6E605"
+   }
+  },
+  "OrdersApi48294D44": {
+   "Type": "AWS::ApiGateway::RestApi",
+   "Properties": {
+    "Description": "API for receiving order events",
+    "Name": "Orders API",
+    "Tags": [
+     {
+      "Key": "CostCenter",
+      "Value": "Engineering"
+     },
+     {
+      "Key": "Environment",
+      "Value": "Demo"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "OrderProcessing"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/OrdersApi/Resource"
+   }
+  },
+  "OrdersApiCloudWatchRole00EA2E11": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "apigateway.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+       ]
+      ]
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "CostCenter",
+      "Value": "Engineering"
+     },
+     {
+      "Key": "Environment",
+      "Value": "Demo"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "OrderProcessing"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/OrdersApi/CloudWatchRole/Resource"
+   }
+  },
+  "OrdersApiAccount74B8FE66": {
+   "Type": "AWS::ApiGateway::Account",
+   "Properties": {
+    "CloudWatchRoleArn": {
+     "Fn::GetAtt": [
+      "OrdersApiCloudWatchRole00EA2E11",
+      "Arn"
+     ]
+    }
+   },
+   "DependsOn": [
+    "OrdersApi48294D44"
+   ],
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/OrdersApi/Account"
+   }
+  },
+  "OrdersApiDeployment7E9592494aed0a56996bbbd2fdf727c5c3e835c1": {
+   "Type": "AWS::ApiGateway::Deployment",
+   "Properties": {
+    "Description": "API for receiving order events",
+    "RestApiId": {
+     "Ref": "OrdersApi48294D44"
+    }
+   },
+   "DependsOn": [
+    "OrdersApiordersPOSTAD0E8A63",
+    "OrdersApiordersDBA2FB62"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/OrdersApi/Deployment/Resource",
+    "aws:cdk:do-not-refactor": true
+   }
+  },
+  "OrdersApiDeploymentStageprod80C33D00": {
+   "Type": "AWS::ApiGateway::Stage",
+   "Properties": {
+    "DeploymentId": {
+     "Ref": "OrdersApiDeployment7E9592494aed0a56996bbbd2fdf727c5c3e835c1"
+    },
+    "RestApiId": {
+     "Ref": "OrdersApi48294D44"
+    },
+    "StageName": "prod",
+    "Tags": [
+     {
+      "Key": "CostCenter",
+      "Value": "Engineering"
+     },
+     {
+      "Key": "Environment",
+      "Value": "Demo"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "OrderProcessing"
+     }
+    ]
+   },
+   "DependsOn": [
+    "OrdersApiAccount74B8FE66"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/OrdersApi/DeploymentStage.prod/Resource"
+   }
+  },
+  "OrdersApiordersDBA2FB62": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Fn::GetAtt": [
+      "OrdersApi48294D44",
+      "RootResourceId"
+     ]
+    },
+    "PathPart": "orders",
+    "RestApiId": {
+     "Ref": "OrdersApi48294D44"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/OrdersApi/Default/orders/Resource"
+   }
+  },
+  "OrdersApiordersPOSTApiPermissionOrderProcessingStackOrdersApiCE8CB98APOSTorders54292F8A": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "OrderReceiverFunctionB8982A50",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:",
+       {
+        "Ref": "AWS::Partition"
+       },
+       ":execute-api:",
+       {
+        "Ref": "AWS::Region"
+       },
+       ":",
+       {
+        "Ref": "AWS::AccountId"
+       },
+       ":",
+       {
+        "Ref": "OrdersApi48294D44"
+       },
+       "/",
+       {
+        "Ref": "OrdersApiDeploymentStageprod80C33D00"
+       },
+       "/POST/orders"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/OrdersApi/Default/orders/POST/ApiPermission.OrderProcessingStackOrdersApiCE8CB98A.POST..orders"
+   }
+  },
+  "OrdersApiordersPOSTApiPermissionTestOrderProcessingStackOrdersApiCE8CB98APOSTordersCB9E9BC7": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "OrderReceiverFunctionB8982A50",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:",
+       {
+        "Ref": "AWS::Partition"
+       },
+       ":execute-api:",
+       {
+        "Ref": "AWS::Region"
+       },
+       ":",
+       {
+        "Ref": "AWS::AccountId"
+       },
+       ":",
+       {
+        "Ref": "OrdersApi48294D44"
+       },
+       "/test-invoke-stage/POST/orders"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/OrdersApi/Default/orders/POST/ApiPermission.Test.OrderProcessingStackOrdersApiCE8CB98A.POST..orders"
+   }
+  },
+  "OrdersApiordersPOSTAD0E8A63": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "NONE",
+    "HttpMethod": "POST",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":apigateway:",
+        {
+         "Ref": "AWS::Region"
+        },
+        ":lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "OrderReceiverFunctionB8982A50",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "OrdersApiordersDBA2FB62"
+    },
+    "RestApiId": {
+     "Ref": "OrdersApi48294D44"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/OrdersApi/Default/orders/POST/Resource"
+   }
+  },
+  "AlarmTopicD01E77F9": {
+   "Type": "AWS::SNS::Topic",
+   "Properties": {
+    "DisplayName": "Order Processing Alarms",
+    "Tags": [
+     {
+      "Key": "CostCenter",
+      "Value": "Engineering"
+     },
+     {
+      "Key": "Environment",
+      "Value": "Demo"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "OrderProcessing"
+     }
+    ],
+    "TopicName": "order-processing-alarms"
+   },
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/AlarmTopic/Resource"
+   }
+  },
+  "OrderReceiverErrorAlarm7B3A4C31": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "AlarmTopicD01E77F9"
+     }
+    ],
+    "AlarmDescription": "Alert when order-receiver Lambda has errors",
+    "AlarmName": "order-receiver-errors",
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "FunctionName",
+      "Value": {
+       "Ref": "OrderReceiverFunctionB8982A50"
+      }
+     }
+    ],
+    "EvaluationPeriods": 1,
+    "MetricName": "Errors",
+    "Namespace": "AWS/Lambda",
+    "Period": 300,
+    "Statistic": "Sum",
+    "Tags": [
+     {
+      "Key": "CostCenter",
+      "Value": "Engineering"
+     },
+     {
+      "Key": "Environment",
+      "Value": "Demo"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "OrderProcessing"
+     }
+    ],
+    "Threshold": 1
+   },
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/OrderReceiverErrorAlarm/Resource"
+   }
+  },
+  "NotifierErrorAlarm0810DBB7": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "AlarmTopicD01E77F9"
+     }
+    ],
+    "AlarmDescription": "Alert when notifier Lambda has errors",
+    "AlarmName": "notifier-errors",
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "FunctionName",
+      "Value": {
+       "Ref": "NotifierFunctionEB33F81B"
+      }
+     }
+    ],
+    "EvaluationPeriods": 1,
+    "MetricName": "Errors",
+    "Namespace": "AWS/Lambda",
+    "Period": 300,
+    "Statistic": "Sum",
+    "Tags": [
+     {
+      "Key": "CostCenter",
+      "Value": "Engineering"
+     },
+     {
+      "Key": "Environment",
+      "Value": "Demo"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "OrderProcessing"
+     }
+    ],
+    "Threshold": 1
+   },
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/NotifierErrorAlarm/Resource"
+   }
+  },
+  "MarketplaceErrorAlarm14E52C98": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "AlarmTopicD01E77F9"
+     }
+    ],
+    "AlarmDescription": "Alert when marketplace Lambda has errors",
+    "AlarmName": "marketplace-errors",
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "FunctionName",
+      "Value": {
+       "Ref": "MarketplaceFunction6A622C06"
+      }
+     }
+    ],
+    "EvaluationPeriods": 1,
+    "MetricName": "Errors",
+    "Namespace": "AWS/Lambda",
+    "Period": 300,
+    "Statistic": "Sum",
+    "Tags": [
+     {
+      "Key": "CostCenter",
+      "Value": "Engineering"
+     },
+     {
+      "Key": "Environment",
+      "Value": "Demo"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "OrderProcessing"
+     }
+    ],
+    "Threshold": 1
+   },
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/MarketplaceErrorAlarm/Resource"
+   }
+  },
+  "QueueDepthAlarmD4A3A893": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "AlarmTopicD01E77F9"
+     }
+    ],
+    "AlarmDescription": "Alert when email queue has too many messages",
+    "AlarmName": "email-queue-depth",
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "QueueName",
+      "Value": {
+       "Fn::GetAtt": [
+        "EmailQueue9C1DA90F",
+        "QueueName"
+       ]
+      }
+     }
+    ],
+    "EvaluationPeriods": 2,
+    "MetricName": "ApproximateNumberOfMessagesVisible",
+    "Namespace": "AWS/SQS",
+    "Period": 300,
+    "Statistic": "Maximum",
+    "Tags": [
+     {
+      "Key": "CostCenter",
+      "Value": "Engineering"
+     },
+     {
+      "Key": "Environment",
+      "Value": "Demo"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "OrderProcessing"
+     }
+    ],
+    "Threshold": 100
+   },
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/QueueDepthAlarm/Resource"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/02PzVLDMAyEn6V3V9DmxDHl58ZQUu4d1RGtqWOHSCaT8fjdGTuF9rSfVpqVtIb16gHuFzjyUrfnpTUHiDtBfVY48j7SDzlhiM9ZN4HV46f75yZYykbWpPibIb4HCsUrkJTF7tAixJfgtBjvcuuWtzR0htl4l5TBDmLjL5lZt94aPZW5QklxtUdmEoY6i+IKNkGfSTbIpLA3RxQacYLYEEvdm5J1xVprH5yoJ+qtnzpykt2baid4LAfM0BD7MGgq8X/FJXPmV5KTb7M1U1LsGOKH743OboGktPWhHVH0CWJtcejKNRlSugaXp/Jm44554C1IHySp7SQn7+4qWFWwXnyxMcshODEdQTPrL/3ARNfJAQAA"
+   },
+   "Metadata": {
+    "aws:cdk:path": "OrderProcessingStack/CDKMetadata/Default"
+   },
+   "Condition": "CDKMetadataAvailable"
+  }
+ },
+ "Outputs": {
+  "OrdersApiEndpointAC1CCDAC": {
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "https://",
+      {
+       "Ref": "OrdersApi48294D44"
+      },
+      ".execute-api.",
+      {
+       "Ref": "AWS::Region"
+      },
+      ".",
+      {
+       "Ref": "AWS::URLSuffix"
+      },
+      "/",
+      {
+       "Ref": "OrdersApiDeploymentStageprod80C33D00"
+      },
+      "/"
+     ]
+    ]
+   }
+  },
+  "OrdersApiEndpoint": {
+   "Description": "API Gateway endpoint URL for POST /orders",
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "https://",
+      {
+       "Ref": "OrdersApi48294D44"
+      },
+      ".execute-api.",
+      {
+       "Ref": "AWS::Region"
+      },
+      ".",
+      {
+       "Ref": "AWS::URLSuffix"
+      },
+      "/",
+      {
+       "Ref": "OrdersApiDeploymentStageprod80C33D00"
+      },
+      "/"
+     ]
+    ]
+   },
+   "Export": {
+    "Name": "OrderProcessingApiUrl"
+   }
+  },
+  "AlarmTopicArn": {
+   "Description": "SNS topic ARN for CloudWatch alarms",
+   "Value": {
+    "Ref": "AlarmTopicD01E77F9"
+   },
+   "Export": {
+    "Name": "OrderProcessingAlarmTopicArn"
+   }
+  }
+ },
+ "Conditions": {
+  "CDKMetadataAvailable": {
+   "Fn::Or": [
+    {
+     "Fn::Or": [
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "af-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-east-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-northeast-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-northeast-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-northeast-3"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-south-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-3"
+       ]
+      }
+     ]
+    },
+    {
+     "Fn::Or": [
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-4"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ca-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ca-west-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "cn-north-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "cn-northwest-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-central-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-north-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-south-2"
+       ]
+      }
+     ]
+    },
+    {
+     "Fn::Or": [
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-west-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-west-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-west-3"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "il-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "me-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "me-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "sa-east-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "us-east-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "us-east-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "us-west-1"
+       ]
+      }
+     ]
+    },
+    {
+     "Fn::Equals": [
+      {
+       "Ref": "AWS::Region"
+      },
+      "us-west-2"
+     ]
+    }
+   ]
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}
