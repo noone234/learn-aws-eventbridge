@@ -9,8 +9,17 @@ import boto3
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-sqs = boto3.client("sqs")
+# Lazy initialization for boto3 client (created on first use)
+_sqs_client = None
 QUEUE_URL = os.environ["QUEUE_URL"]
+
+
+def get_sqs_client():
+    """Get or create SQS client (lazy initialization for better testability)."""
+    global _sqs_client
+    if _sqs_client is None:
+        _sqs_client = boto3.client("sqs")
+    return _sqs_client
 
 
 def log_structured(level: str, message: str, **kwargs: Any) -> None:
@@ -54,6 +63,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
             "subject": f"New Order Received: {order_id}",
             "orderData": detail,
         }
+        sqs = get_sqs_client()
         response = sqs.send_message(QueueUrl=QUEUE_URL, MessageBody=json.dumps(email_message))
         message_id = response["MessageId"]
         log_structured(

@@ -49,6 +49,9 @@ def lambda_context() -> MagicMock:
 @mock_aws
 def test_handler_success(api_gateway_event: dict[str, Any], lambda_context: MagicMock) -> None:
     """Test successful order processing."""
+    # Reset the global boto3 client cache to ensure it uses mocked clients
+    index._eventbridge_client = None
+
     # Mock EventBridge
     import boto3
 
@@ -70,6 +73,9 @@ def test_handler_success(api_gateway_event: dict[str, Any], lambda_context: Magi
 @mock_aws
 def test_handler_invalid_json(lambda_context: MagicMock) -> None:
     """Test handling of invalid JSON in request body."""
+    # Reset the global boto3 client cache
+    index._eventbridge_client = None
+
     import boto3
 
     events = boto3.client("events", region_name="us-east-1")
@@ -89,16 +95,22 @@ def test_handler_eventbridge_error(
     api_gateway_event: dict[str, Any], lambda_context: MagicMock, monkeypatch: Any
 ) -> None:
     """Test error handling when EventBridge publish fails."""
+    # Reset the global boto3 client cache
+    index._eventbridge_client = None
+
     import boto3
 
     events = boto3.client("events", region_name="us-east-1")
     events.create_event_bus(Name="test-event-bus")
 
-    # Mock put_events to raise an exception
+    # Mock get_eventbridge_client to return a client with mocked put_events
+    mock_eventbridge = boto3.client("events", region_name="us-east-1")
+
     def mock_put_events(*args: Any, **kwargs: Any) -> None:
         raise Exception("EventBridge error")
 
-    monkeypatch.setattr(index.eventbridge, "put_events", mock_put_events)
+    monkeypatch.setattr(mock_eventbridge, "put_events", mock_put_events)
+    monkeypatch.setattr(index, "get_eventbridge_client", lambda: mock_eventbridge)
 
     response = index.handler(api_gateway_event, lambda_context)
 

@@ -55,6 +55,9 @@ def lambda_context() -> MagicMock:
 @mock_aws
 def test_handler_success(eventbridge_event: dict[str, Any], lambda_context: MagicMock) -> None:
     """Test successful notification queuing."""
+    # Reset the global boto3 client cache to ensure it uses mocked clients
+    index._sqs_client = None
+
     # Create SQS queue
     import boto3
 
@@ -90,6 +93,9 @@ def test_handler_sqs_error(
     eventbridge_event: dict[str, Any], lambda_context: MagicMock, monkeypatch: Any
 ) -> None:
     """Test error handling when SQS send fails."""
+    # Reset the global boto3 client cache
+    index._sqs_client = None
+
     import boto3
 
     sqs_client = boto3.client("sqs", region_name="us-east-1")
@@ -99,11 +105,14 @@ def test_handler_sqs_error(
     os.environ["QUEUE_URL"] = queue_url
     index.QUEUE_URL = queue_url
 
-    # Mock send_message to raise an exception
+    # Mock get_sqs_client to return a client with mocked send_message
+    mock_sqs = boto3.client("sqs", region_name="us-east-1")
+
     def mock_send_message(*args: Any, **kwargs: Any) -> None:
         raise Exception("SQS error")
 
-    monkeypatch.setattr(index.sqs, "send_message", mock_send_message)
+    monkeypatch.setattr(mock_sqs, "send_message", mock_send_message)
+    monkeypatch.setattr(index, "get_sqs_client", lambda: mock_sqs)
 
     # Should raise the exception
     with pytest.raises(Exception, match="SQS error"):

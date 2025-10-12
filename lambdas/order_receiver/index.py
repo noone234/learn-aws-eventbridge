@@ -9,8 +9,17 @@ import boto3
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-eventbridge = boto3.client("events")
+# Lazy initialization for boto3 client (created on first use)
+_eventbridge_client = None
 EVENT_BUS_NAME = os.environ["EVENT_BUS_NAME"]
+
+
+def get_eventbridge_client():
+    """Get or create EventBridge client (lazy initialization for better testability)."""
+    global _eventbridge_client
+    if _eventbridge_client is None:
+        _eventbridge_client = boto3.client("events")
+    return _eventbridge_client
 
 
 def log_structured(level: str, message: str, **kwargs: Any) -> None:
@@ -59,6 +68,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
     # Publish event to EventBridge
     try:
+        eventbridge = get_eventbridge_client()
         response = eventbridge.put_events(
             Entries=[
                 {

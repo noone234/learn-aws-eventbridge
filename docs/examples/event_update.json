@@ -13,7 +13,7 @@
             "sender": "FastLane Logistics",
             "receiver": "ModalView"
         },
-        "purpose": "create",
+        "purpose": "update",
         "order": {
             "type": "delivery_one_way",
             "market": "philadelphia",

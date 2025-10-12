@@ -9,9 +9,16 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # Required for OIDC
+      contents: read    # Required to checkout code
     strategy:
       matrix:
         python-version: ["3.13"]
+
+    env:
+      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+      HAS_AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY_ID != '' && 'true' || 'false' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -34,6 +41,21 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
+
+      - name: Configure AWS credentials (OIDC)
+        if: ${{ env.AWS_ROLE_ARN != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+
+      - name: Configure AWS credentials (Access Keys - Fallback)
+        if: ${{ env.AWS_ROLE_ARN == '' && env.HAS_AWS_ACCESS_KEY == 'true' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
 
       - name: Lint with ruff
         run: |
