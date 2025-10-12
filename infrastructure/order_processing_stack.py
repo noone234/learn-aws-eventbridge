@@ -27,6 +27,9 @@ from aws_cdk import (
     aws_lambda as lambda_,
 )
 from aws_cdk import (
+    aws_logs as logs,
+)
+from aws_cdk import (
     aws_sns as sns,
 )
 from aws_cdk import (
@@ -122,6 +125,28 @@ class OrderProcessingStack(Stack):
             timeout=Duration.seconds(30),
         )
 
+        # Create CloudWatch Log Groups for EventBridge rules
+        notifier_rule_log_group = logs.LogGroup(
+            self,
+            "NotifierRuleLogGroup",
+            log_group_name="/aws/events/route-to-notifier",
+            retention=logs.RetentionDays.ONE_WEEK,
+        )
+
+        inventory_rule_log_group = logs.LogGroup(
+            self,
+            "InventoryRuleLogGroup",
+            log_group_name="/aws/events/route-to-inventory",
+            retention=logs.RetentionDays.ONE_WEEK,
+        )
+
+        document_rule_log_group = logs.LogGroup(
+            self,
+            "DocumentRuleLogGroup",
+            log_group_name="/aws/events/route-to-document",
+            retention=logs.RetentionDays.ONE_WEEK,
+        )
+
         # Create EventBridge rules to route events
         notifier_rule = events.Rule(
             self,
@@ -133,6 +158,7 @@ class OrderProcessingStack(Stack):
             rule_name="route-to-notifier",
         )
         notifier_rule.add_target(targets.LambdaFunction(notifier_fn))
+        notifier_rule.add_target(targets.CloudWatchLogGroup(notifier_rule_log_group))
 
         inventory_rule = events.Rule(
             self,
@@ -146,6 +172,7 @@ class OrderProcessingStack(Stack):
             rule_name="route-to-inventory",
         )
         inventory_rule.add_target(targets.LambdaFunction(inventory_fn))
+        inventory_rule.add_target(targets.CloudWatchLogGroup(inventory_rule_log_group))
 
         document_rule = events.Rule(
             self,
@@ -157,6 +184,15 @@ class OrderProcessingStack(Stack):
             rule_name="route-to-document",
         )
         document_rule.add_target(targets.LambdaFunction(document_fn))
+        document_rule.add_target(targets.CloudWatchLogGroup(document_rule_log_group))
+
+        # Create CloudWatch Log Group for API Gateway access logs
+        api_log_group = logs.LogGroup(
+            self,
+            "ApiGatewayAccessLogs",
+            log_group_name="/aws/apigateway/public-api-access",
+            retention=logs.RetentionDays.ONE_WEEK,
+        )
 
         # Create API Gateway
         api = apigateway.RestApi(
@@ -164,7 +200,21 @@ class OrderProcessingStack(Stack):
             "PublicApi",
             rest_api_name="Public API",
             description="API for receiving order events",
-            deploy_options=apigateway.StageOptions(stage_name="prod"),
+            deploy_options=apigateway.StageOptions(
+                stage_name="prod",
+                access_log_destination=apigateway.LogGroupLogDestination(api_log_group),
+                access_log_format=apigateway.AccessLogFormat.json_with_standard_fields(
+                    caller=True,
+                    http_method=True,
+                    ip=True,
+                    protocol=True,
+                    request_time=True,
+                    resource_path=True,
+                    response_length=True,
+                    status=True,
+                    user=True,
+                ),
+            ),
         )
 
         # Create /orders resource and POST method
