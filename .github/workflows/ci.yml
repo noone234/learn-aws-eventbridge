@@ -67,7 +67,7 @@ jobs:
 
       - name: Type check with mypy
         run: |
-          mypy app.py order_processing_stack.py
+          mypy app.py infrastructure/
 
       - name: Security scan with bandit
         run: |

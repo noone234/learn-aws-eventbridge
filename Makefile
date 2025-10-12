@@ -54,7 +54,7 @@ format:
 	black .
 
 type-check:
-	mypy app.py order_processing_stack.py
+	mypy app.py infrastructure/
 
 security:
 	bandit -r lambdas/ -ll
@@ -93,7 +93,7 @@ setup-github:
 		echo "Usage: make setup-github GITHUB_ORG=myusername GITHUB_REPO=learn-aws-eventbridge"; \
 		exit 1; \
 	fi
-	cdk deploy -a "python setup_github_oidc.py $(GITHUB_ORG) $(GITHUB_REPO)" GitHubOIDCStack
+	cdk deploy -a "python infrastructure/setup_github_oidc.py $(GITHUB_ORG) $(GITHUB_REPO)" GitHubOIDCStack
 
 all-checks: lint type-check test security
 

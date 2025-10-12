@@ -141,7 +141,7 @@ This method uses temporary credentials and doesn't require storing AWS access ke
    make setup-github GITHUB_ORG=myusername GITHUB_REPO=learn-aws-eventbridge
 
    # Option B: Using CDK directly
-   cdk deploy -a "python setup_github_oidc.py myusername learn-aws-eventbridge"
+   cdk deploy -a "python infrastructure/setup_github_oidc.py myusername learn-aws-eventbridge"
    ```
 
 2. **Copy the Role ARN from the output**
