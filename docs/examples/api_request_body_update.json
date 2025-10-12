@@ -1,0 +1,14 @@
+{
+    "direction": "INBOUND",
+    "partnership": {
+        "sender": "FastLane Logistics",
+        "receiver": "ModalView"
+    },
+    "purpose": "create",
+    "order": {
+        "type": "delivery_one_way",
+        "market": "philadelphia",
+        "imcCompany": "FastLane Logistics",
+        "referenceNumber": "12345678"
+    }
+}
