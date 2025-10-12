@@ -1,7 +1,7 @@
 """CDK Stack for GitHub Actions OIDC Provider and IAM Role."""
 from typing import Any
 
-from aws_cdk import Stack, aws_iam as iam
+from aws_cdk import Duration, Stack, aws_iam as iam
 from constructs import Construct
 
 
@@ -54,7 +54,7 @@ class GitHubOIDCStack(Stack):
                 "sts:AssumeRoleWithWebIdentity",
             ),
             description="Role for GitHub Actions to deploy CDK stacks",
-            max_session_duration=3600,  # 1 hour
+            max_session_duration=Duration.hours(1),
         )
 
         # Add permissions for CDK deployments
