@@ -9,6 +9,7 @@ import pytest
 from moto import mock_aws
 
 # Set environment variables before importing the handler
+os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
 os.environ["QUEUE_URL"] = "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue"
 
 # Import after setting env vars

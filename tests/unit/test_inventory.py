@@ -2,12 +2,16 @@
 
 import importlib.util
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
+
+# Set environment variables before importing the handler
+os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
 
 # Load the Lambda function module dynamically
 lambda_path = Path(__file__).parent.parent.parent / "lambdas" / "inventory" / "index.py"

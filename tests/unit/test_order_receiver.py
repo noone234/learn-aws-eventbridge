@@ -9,6 +9,7 @@ import pytest
 from moto import mock_aws
 
 # Set environment variables before importing the handler
+os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
 os.environ["EVENT_BUS_NAME"] = "test-event-bus"
 
 # Import after setting env vars
