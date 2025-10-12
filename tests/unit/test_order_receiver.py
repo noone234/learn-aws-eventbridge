@@ -1,4 +1,5 @@
 """Unit tests for order_receiver Lambda function."""
+
 import json
 import os
 from typing import Any

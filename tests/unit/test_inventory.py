@@ -1,4 +1,5 @@
 """Unit tests for inventory Lambda function."""
+
 import importlib.util
 import json
 import sys

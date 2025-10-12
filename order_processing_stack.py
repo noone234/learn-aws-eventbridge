@@ -1,4 +1,5 @@
 """CDK Stack for Order Processing with EventBridge."""
+
 from typing import Any
 
 from aws_cdk import (
@@ -59,19 +60,16 @@ class OrderProcessingStack(Stack):
 
         # Create custom EventBridge bus
         event_bus = events.EventBus(
-            self, "OrderProcessingBus",
-            event_bus_name="order-processing-bus"
+            self, "OrderProcessingBus", event_bus_name="order-processing-bus"
         )
 
         # Create SQS queue for email notifications
-        email_queue = sqs.Queue(
-            self, "EmailQueue",
-            queue_name="order-notifications-queue"
-        )
+        email_queue = sqs.Queue(self, "EmailQueue", queue_name="order-notifications-queue")
 
         # Create Lambda function: order-receiver
         order_receiver_fn = lambda_.Function(
-            self, "OrderReceiverFunction",
+            self,
+            "OrderReceiverFunction",
             function_name="order-receiver",
             runtime=lambda_.Runtime.PYTHON_3_13,
             handler="index.handler",
@@ -87,7 +85,8 @@ class OrderProcessingStack(Stack):
 
         # Create Lambda function: notifier
         notifier_fn = lambda_.Function(
-            self, "NotifierFunction",
+            self,
+            "NotifierFunction",
             function_name="notifier",
             runtime=lambda_.Runtime.PYTHON_3_13,
             handler="index.handler",
@@ -103,7 +102,8 @@ class OrderProcessingStack(Stack):
 
         # Create Lambda function: inventory
         inventory_fn = lambda_.Function(
-            self, "InventoryFunction",
+            self,
+            "InventoryFunction",
             function_name="inventory",
             runtime=lambda_.Runtime.PYTHON_3_13,
             handler="index.handler",
@@ -113,7 +113,8 @@ class OrderProcessingStack(Stack):
 
         # Create Lambda function: document
         document_fn = lambda_.Function(
-            self, "DocumentFunction",
+            self,
+            "DocumentFunction",
             function_name="document",
             runtime=lambda_.Runtime.PYTHON_3_13,
             handler="index.handler",
@@ -123,56 +124,52 @@ class OrderProcessingStack(Stack):
 
         # Create EventBridge rules to route events
         notifier_rule = events.Rule(
-            self, "NotifierRule",
+            self,
+            "NotifierRule",
             event_bus=event_bus,
             event_pattern=events.EventPattern(
-                source=["public.api"],
-                detail_type=["order.received.v1"]
+                source=["public.api"], detail_type=["order.received.v1"]
             ),
-            rule_name="route-to-notifier"
+            rule_name="route-to-notifier",
         )
         notifier_rule.add_target(targets.LambdaFunction(notifier_fn))
 
         inventory_rule = events.Rule(
-            self, "InventoryRule",
+            self,
+            "InventoryRule",
             event_bus=event_bus,
             event_pattern=events.EventPattern(
-                source=["public.api"],
-                detail_type=["order.received.v1"]
+                source=["public.api"], detail_type=["order.received.v1"]
             ),
-            rule_name="route-to-inventory"
+            rule_name="route-to-inventory",
         )
         inventory_rule.add_target(targets.LambdaFunction(inventory_fn))
 
         document_rule = events.Rule(
-            self, "DocumentRule",
+            self,
+            "DocumentRule",
             event_bus=event_bus,
             event_pattern=events.EventPattern(
-                source=["public.api"],
-                detail_type=["order.received.v1"]
+                source=["public.api"], detail_type=["order.received.v1"]
             ),
-            rule_name="route-to-document"
+            rule_name="route-to-document",
         )
         document_rule.add_target(targets.LambdaFunction(document_fn))
 
         # Create API Gateway
         api = apigateway.RestApi(
-            self, "OrdersApi",
+            self,
+            "OrdersApi",
             rest_api_name="Orders API",
             description="API for receiving order events",
-            deploy_options=apigateway.StageOptions(
-                stage_name="prod"
-            )
+            deploy_options=apigateway.StageOptions(stage_name="prod"),
         )
 
         # Create /orders resource and POST method
         orders_resource = api.root.add_resource("orders")
 
         # Create Lambda integration
-        integration = apigateway.LambdaIntegration(
-            order_receiver_fn,
-            proxy=True
-        )
+        integration = apigateway.LambdaIntegration(order_receiver_fn, proxy=True)
 
         orders_resource.add_method("POST", integration)
 

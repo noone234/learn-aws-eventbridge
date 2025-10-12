@@ -24,8 +24,6 @@ if __name__ == "__main__":
     github_repo = sys.argv[2]
 
     app = cdk.App()
-    GitHubOIDCStack(
-        app, "GitHubOIDCStack", github_org=github_org, github_repo=github_repo
-    )
+    GitHubOIDCStack(app, "GitHubOIDCStack", github_org=github_org, github_repo=github_repo)
 
     app.synth()

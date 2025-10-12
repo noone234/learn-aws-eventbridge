@@ -1,4 +1,5 @@
 """CDK Stack for GitHub Actions OIDC Provider and IAM Role."""
+
 from typing import Any
 
 from aws_cdk import Duration, Stack
