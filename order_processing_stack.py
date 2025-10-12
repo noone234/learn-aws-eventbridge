@@ -6,13 +6,29 @@ from aws_cdk import (
     Duration,
     Stack,
     Tags,
+)
+from aws_cdk import (
     aws_apigateway as apigateway,
+)
+from aws_cdk import (
     aws_cloudwatch as cloudwatch,
+)
+from aws_cdk import (
     aws_cloudwatch_actions as cw_actions,
+)
+from aws_cdk import (
     aws_events as events,
+)
+from aws_cdk import (
     aws_events_targets as targets,
+)
+from aws_cdk import (
     aws_lambda as lambda_,
+)
+from aws_cdk import (
     aws_sns as sns,
+)
+from aws_cdk import (
     aws_sqs as sqs,
 )
 from constructs import Construct

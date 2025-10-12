@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Any, Dict
+from typing import Any
 
 # Configure structured logging
 logger = logging.getLogger()
@@ -13,7 +13,7 @@ def log_structured(level: str, message: str, **kwargs: Any) -> None:
     logger.log(getattr(logging, level.upper()), json.dumps(log_entry))
 
 
-def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
+def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     """
     Receives order event from EventBridge and logs it.
     This function processes orders for document generation.
@@ -49,4 +49,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         order_id=order_id,
     )
 
-    return {"statusCode": 200, "body": json.dumps({"message": "Order processed for document generation"})}
+    return {
+        "statusCode": 200,
+        "body": json.dumps({"message": "Order processed for document generation"}),
+    }

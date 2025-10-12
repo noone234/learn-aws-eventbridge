@@ -3,7 +3,7 @@ import importlib.util
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -17,7 +17,7 @@ spec.loader.exec_module(index)
 
 
 @pytest.fixture
-def eventbridge_event() -> Dict[str, Any]:
+def eventbridge_event() -> dict[str, Any]:
     """Create a sample EventBridge event."""
     return {
         "version": "0",
@@ -43,7 +43,7 @@ def lambda_context() -> MagicMock:
     return context
 
 
-def test_handler_success(eventbridge_event: Dict[str, Any], lambda_context: MagicMock) -> None:
+def test_handler_success(eventbridge_event: dict[str, Any], lambda_context: MagicMock) -> None:
     """Test successful inventory processing."""
     response = index.handler(eventbridge_event, lambda_context)
 

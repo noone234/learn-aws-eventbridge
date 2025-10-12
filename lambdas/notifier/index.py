@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from typing import Any, Dict
+from typing import Any
 
 import boto3
 
@@ -19,7 +19,7 @@ def log_structured(level: str, message: str, **kwargs: Any) -> None:
     logger.log(getattr(logging, level.upper()), json.dumps(log_entry))
 
 
-def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
+def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     """
     Receives order event from EventBridge and queues it for email notification.
     This simulates notifying the Sales team via email by placing the event in an SQS queue.

@@ -1,7 +1,7 @@
 """Unit tests for notifier Lambda function."""
 import json
 import os
-from typing import Any, Dict
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -24,7 +24,7 @@ spec.loader.exec_module(index)
 
 
 @pytest.fixture
-def eventbridge_event() -> Dict[str, Any]:
+def eventbridge_event() -> dict[str, Any]:
     """Create a sample EventBridge event."""
     return {
         "version": "0",
@@ -51,7 +51,7 @@ def lambda_context() -> MagicMock:
 
 
 @mock_aws
-def test_handler_success(eventbridge_event: Dict[str, Any], lambda_context: MagicMock) -> None:
+def test_handler_success(eventbridge_event: dict[str, Any], lambda_context: MagicMock) -> None:
     """Test successful notification queuing."""
     # Create SQS queue
     import boto3
@@ -85,7 +85,7 @@ def test_handler_success(eventbridge_event: Dict[str, Any], lambda_context: Magi
 
 @mock_aws
 def test_handler_sqs_error(
-    eventbridge_event: Dict[str, Any], lambda_context: MagicMock, monkeypatch: Any
+    eventbridge_event: dict[str, Any], lambda_context: MagicMock, monkeypatch: Any
 ) -> None:
     """Test error handling when SQS send fails."""
     import boto3

@@ -1,7 +1,8 @@
 """CDK Stack for GitHub Actions OIDC Provider and IAM Role."""
 from typing import Any
 
-from aws_cdk import Duration, Stack, aws_iam as iam
+from aws_cdk import Duration, Stack
+from aws_cdk import aws_iam as iam
 from constructs import Construct
 
 
@@ -48,7 +49,9 @@ class GitHubOIDCStack(Stack):
                         "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
                     },
                     "StringLike": {
-                        "token.actions.githubusercontent.com:sub": f"repo:{github_org}/{github_repo}:*",
+                        "token.actions.githubusercontent.com:sub": (
+                            f"repo:{github_org}/{github_repo}:*"
+                        ),
                     },
                 },
                 "sts:AssumeRoleWithWebIdentity",

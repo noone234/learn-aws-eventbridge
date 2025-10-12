@@ -1,7 +1,7 @@
 """Unit tests for order_receiver Lambda function."""
 import json
 import os
-from typing import Any, Dict
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -24,7 +24,7 @@ spec.loader.exec_module(index)
 
 
 @pytest.fixture
-def api_gateway_event() -> Dict[str, Any]:
+def api_gateway_event() -> dict[str, Any]:
     """Create a sample API Gateway event."""
     return {
         "body": json.dumps(
@@ -45,7 +45,7 @@ def lambda_context() -> MagicMock:
 
 
 @mock_aws
-def test_handler_success(api_gateway_event: Dict[str, Any], lambda_context: MagicMock) -> None:
+def test_handler_success(api_gateway_event: dict[str, Any], lambda_context: MagicMock) -> None:
     """Test successful order processing."""
     # Mock EventBridge
     import boto3
@@ -84,7 +84,7 @@ def test_handler_invalid_json(lambda_context: MagicMock) -> None:
 
 @mock_aws
 def test_handler_eventbridge_error(
-    api_gateway_event: Dict[str, Any], lambda_context: MagicMock, monkeypatch: Any
+    api_gateway_event: dict[str, Any], lambda_context: MagicMock, monkeypatch: Any
 ) -> None:
     """Test error handling when EventBridge publish fails."""
     import boto3
