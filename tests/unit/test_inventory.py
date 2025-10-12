@@ -1,4 +1,4 @@
-"""Unit tests for marketplace Lambda function."""
+"""Unit tests for inventory Lambda function."""
 import importlib.util
 import json
 import sys
@@ -9,10 +9,10 @@ from unittest.mock import MagicMock
 import pytest
 
 # Load the Lambda function module dynamically
-lambda_path = Path(__file__).parent.parent.parent / "lambdas" / "marketplace" / "index.py"
-spec = importlib.util.spec_from_file_location("marketplace_index", lambda_path)
+lambda_path = Path(__file__).parent.parent.parent / "lambdas" / "inventory" / "index.py"
+spec = importlib.util.spec_from_file_location("inventory_index", lambda_path)
 index = importlib.util.module_from_spec(spec)
-sys.modules["marketplace_index"] = index
+sys.modules["inventory_index"] = index
 spec.loader.exec_module(index)
 
 
@@ -44,12 +44,12 @@ def lambda_context() -> MagicMock:
 
 
 def test_handler_success(eventbridge_event: Dict[str, Any], lambda_context: MagicMock) -> None:
-    """Test successful marketplace processing."""
+    """Test successful inventory processing."""
     response = index.handler(eventbridge_event, lambda_context)
 
     assert response["statusCode"] == 200
     body = json.loads(response["body"])
-    assert body["message"] == "Order processed for marketplace"
+    assert body["message"] == "Order processed for inventory"
 
 
 def test_handler_missing_order_id(lambda_context: MagicMock) -> None:

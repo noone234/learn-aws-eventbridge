@@ -26,7 +26,7 @@ class OrderProcessingStack(Stack):
     - API Gateway with POST /orders endpoint
     - Lambda function to receive orders and publish to EventBridge
     - Custom EventBridge bus for order events
-    - Two Lambda functions to consume events (notifier and marketplace)
+    - Two Lambda functions to consume events (notifier and inventory)
     - SQS queue for email notifications
     """
 
@@ -85,13 +85,13 @@ class OrderProcessingStack(Stack):
         # Grant permission to send messages to SQS
         email_queue.grant_send_messages(notifier_fn)
 
-        # Create Lambda function: marketplace
-        marketplace_fn = lambda_.Function(
-            self, "MarketplaceFunction",
-            function_name="marketplace",
+        # Create Lambda function: inventory
+        inventory_fn = lambda_.Function(
+            self, "InventoryFunction",
+            function_name="inventory",
             runtime=lambda_.Runtime.PYTHON_3_13,
             handler="index.handler",
-            code=lambda_.Code.from_asset("lambdas/marketplace"),
+            code=lambda_.Code.from_asset("lambdas/inventory"),
             timeout=Duration.seconds(30),
         )
 
@@ -107,16 +107,16 @@ class OrderProcessingStack(Stack):
         )
         notifier_rule.add_target(targets.LambdaFunction(notifier_fn))
 
-        marketplace_rule = events.Rule(
-            self, "MarketplaceRule",
+        inventory_rule = events.Rule(
+            self, "InventoryRule",
             event_bus=event_bus,
             event_pattern=events.EventPattern(
                 source=["public.api"],
                 detail_type=["order.received.v1"]
             ),
-            rule_name="route-to-marketplace"
+            rule_name="route-to-inventory"
         )
-        marketplace_rule.add_target(targets.LambdaFunction(marketplace_fn))
+        inventory_rule.add_target(targets.LambdaFunction(inventory_fn))
 
         # Create API Gateway
         api = apigateway.RestApi(
@@ -172,17 +172,17 @@ class OrderProcessingStack(Stack):
         )
         notifier_error_alarm.add_alarm_action(cw_actions.SnsAction(alarm_topic))
 
-        marketplace_error_alarm = cloudwatch.Alarm(
+        inventory_error_alarm = cloudwatch.Alarm(
             self,
-            "MarketplaceErrorAlarm",
-            alarm_name="marketplace-errors",
-            alarm_description="Alert when marketplace Lambda has errors",
-            metric=marketplace_fn.metric_errors(period=Duration.minutes(5)),
+            "InventoryErrorAlarm",
+            alarm_name="inventory-errors",
+            alarm_description="Alert when inventory Lambda has errors",
+            metric=inventory_fn.metric_errors(period=Duration.minutes(5)),
             threshold=1,
             evaluation_periods=1,
             comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
         )
-        marketplace_error_alarm.add_alarm_action(cw_actions.SnsAction(alarm_topic))
+        inventory_error_alarm.add_alarm_action(cw_actions.SnsAction(alarm_topic))
 
         # CloudWatch Alarm for SQS queue depth
         queue_depth_alarm = cloudwatch.Alarm(

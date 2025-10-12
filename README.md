@@ -28,7 +28,7 @@ This demo showcases an event-driven architecture using AWS EventBridge:
    - Detail Type: `order.received.v1`
 4. **EventBridge Rules** route events to two Lambda functions:
    - **Lambda (notifier)** - Simulates notifying the Sales team by sending a message to an SQS queue
-   - **Lambda (marketplace)** - Processes orders for marketplace integration
+   - **Lambda (inventory)** - Processes orders for inventory integration
 5. **SQS Queue** (`order-notifications-queue`) receives notification messages
 
 All infrastructure is defined using AWS CDK in Python.
@@ -97,7 +97,7 @@ On your computer:
    - **CloudWatch Logs** → Check logs for the `order-receiver` Lambda to see the incoming payload
    - **EventBridge** → View the `order-processing-bus` to see events published with source `public.api` and detail-type `order.received.v1`
    - **CloudWatch Logs** → Check logs for the `notifier` Lambda to see it processing the event
-   - **CloudWatch Logs** → Check logs for the `marketplace` Lambda to see it processing the event
+   - **CloudWatch Logs** → Check logs for the `inventory` Lambda to see it processing the event
    - **SQS** → Check the `order-notifications-queue` to see messages queued for email notifications
 
 We assume that you know your way around AWS CloudWatch and observability tools.
@@ -207,7 +207,7 @@ on:
 
 ## Project Documentation
 
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Detailed architecture diagrams, event schemas, and design patterns
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Detailed architecture diagrams, event schemas, and design patterns
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - Development guidelines and best practices
 
 ## AWS Documentation

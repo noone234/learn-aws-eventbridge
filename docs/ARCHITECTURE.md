@@ -39,12 +39,12 @@
        │                     │
        │                     │
        │ Rule 1              │ Rule 2
-       │ (route-to-notifier) │ (route-to-marketplace)
+       │ (route-to-notifier) │ (route-to-inventory)
        │                     │
        ▼                     ▼
 ┌─────────────────┐   ┌──────────────────┐
 │ Lambda:         │   │ Lambda:          │
-│ notifier        │   │ marketplace      │
+│ notifier        │   │ inventory        │
 │ ├─ Logs event   │   │ └─ Logs event    │
 │ └─ Sends to SQS │   └──────────────────┘
 └────────┬────────┘
@@ -95,8 +95,8 @@ Two rules route events to consumer Lambda functions:
 - **Target**: notifier Lambda
 - **Pattern**: Matches all `order.received.v1` events
 
-#### Rule 2: route-to-marketplace
-- **Target**: marketplace Lambda
+#### Rule 2: route-to-inventory
+- **Target**: inventory Lambda
 - **Pattern**: Matches all `order.received.v1` events
 
 ### 5. Lambda: notifier
@@ -109,12 +109,12 @@ Two rules route events to consumer Lambda functions:
 - **Environment Variables**:
   - `QUEUE_URL`: URL of the email queue
 
-### 6. Lambda: marketplace
+### 6. Lambda: inventory
 - **Runtime**: Python 3.13
 - **Trigger**: EventBridge (order.received.v1 events)
 - **Actions**:
   1. Logs event details (structured JSON logging)
-  2. Simulates marketplace integration processing
+  2. Simulates inventory integration processing
 
 ### 7. SQS Queue
 - **Name**: order-notifications-queue
@@ -216,7 +216,7 @@ EventBridge acts as a central event bus, enabling:
 - Event filtering and routing
 
 ### 3. Fan-out Pattern
-One event triggers multiple independent consumers (notifier and marketplace), allowing:
+One event triggers multiple independent consumers (notifier and inventory), allowing:
 - Parallel processing
 - Independent scaling
 - Different failure modes
