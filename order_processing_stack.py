@@ -139,7 +139,9 @@ class OrderProcessingStack(Stack):
             "InventoryRule",
             event_bus=event_bus,
             event_pattern=events.EventPattern(
-                source=["public.api"], detail_type=["order.received.v1"]
+                source=["public.api"],
+                detail_type=["order.received.v1"],
+                detail={"purpose": [{"anything-but": ["update"]}]},
             ),
             rule_name="route-to-inventory",
         )
