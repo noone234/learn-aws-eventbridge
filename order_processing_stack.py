@@ -161,8 +161,8 @@ class OrderProcessingStack(Stack):
         # Create API Gateway
         api = apigateway.RestApi(
             self,
-            "OrdersApi",
-            rest_api_name="Orders API",
+            "PublicApi",
+            rest_api_name="Public API",
             description="API for receiving order events",
             deploy_options=apigateway.StageOptions(stage_name="prod"),
         )
