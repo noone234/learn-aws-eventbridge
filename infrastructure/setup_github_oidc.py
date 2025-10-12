@@ -12,7 +12,7 @@ import sys
 
 import aws_cdk as cdk
 
-from github_oidc_stack import GitHubOIDCStack
+from infrastructure.github_oidc_stack import GitHubOIDCStack
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
