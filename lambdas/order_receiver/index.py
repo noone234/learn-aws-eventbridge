@@ -32,6 +32,9 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     """
     Receives order from API Gateway, logs it, and publishes to EventBridge.
 
+    Accepts any valid JSON payload and passes it through to EventBridge.
+    Returns 400 if request body is missing or contains invalid JSON.
+
     Args:
         event: API Gateway event containing the order payload
         context: Lambda context object
@@ -42,13 +45,24 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     request_id = context.request_id if hasattr(context, "request_id") else "unknown"
 
     # Log the incoming payload
-    log_structured("info", "Received order request", request_id=request_id, event=event)
+    log_structured("info", "Received order", request_id=request_id, event=event)
 
     # Extract the body from API Gateway event
-    body = event.get("body", "{}")
+    body = event.get("body")
+
+    # Return 400 if no request body provided
+    if not body:
+        log_structured("error", "Missing request body", request_id=request_id)
+        return {
+            "statusCode": 400,
+            "headers": {"Content-Type": "application/json"},
+            "body": json.dumps({"message": "Request body is required"}),
+        }
+
+    # Parse JSON body
     if isinstance(body, str):
         try:
-            order_data = json.loads(body)
+            payload = json.loads(body)
         except json.JSONDecodeError as e:
             log_structured(
                 "error", "Invalid JSON in request body", request_id=request_id, error=str(e)
@@ -59,11 +73,10 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
                 "body": json.dumps({"message": "Invalid JSON in request body"}),
             }
     else:
-        order_data = body
+        payload = body
 
-    order_id = order_data.get("orderId", "unknown")
     log_structured(
-        "info", "Processing order", request_id=request_id, order_id=order_id, order_data=order_data
+        "info", "Processing order", request_id=request_id, order_data=payload
     )
 
     # Publish event to EventBridge
@@ -74,7 +87,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
                 {
                     "Source": "public.api",
                     "DetailType": "order.received.v1",
-                    "Detail": json.dumps(order_data),
+                    "Detail": json.dumps(payload),
                     "EventBusName": EVENT_BUS_NAME,
                 }
             ]
@@ -83,7 +96,6 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
             "info",
             "Published event to EventBridge",
             request_id=request_id,
-            order_id=order_id,
             eventbridge_response=response,
         )
     except Exception as e:
@@ -91,7 +103,6 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
             "error",
             "Error publishing to EventBridge",
             request_id=request_id,
-            order_id=order_id,
             error=str(e),
             error_type=type(e).__name__,
         )
@@ -103,10 +114,10 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
     # Return success response immediately (async pattern)
     log_structured(
-        "info", "Order accepted for processing", request_id=request_id, order_id=order_id
+        "info", "Order accepted for processing", request_id=request_id
     )
     return {
         "statusCode": 202,
         "headers": {"Content-Type": "application/json"},
-        "body": json.dumps({"message": "Order received and processing", "orderId": order_id}),
+        "body": json.dumps({"message": "Order received and processing"}),
     }

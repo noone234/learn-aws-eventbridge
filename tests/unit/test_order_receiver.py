@@ -67,7 +67,26 @@ def test_handler_success(api_gateway_event: dict[str, Any], lambda_context: Magi
 
     body = json.loads(response["body"])
     assert body["message"] == "Order received and processing"
-    assert body["orderId"] == "12345"
+
+
+@mock_aws
+def test_handler_missing_body(lambda_context: MagicMock) -> None:
+    """Test handling of missing request body."""
+    # Reset the global boto3 client cache
+    index._eventbridge_client = None
+
+    import boto3
+
+    events = boto3.client("events", region_name="us-east-1")
+    events.create_event_bus(Name="test-event-bus")
+
+    event = {"headers": {}, "httpMethod": "POST", "path": "/orders"}
+
+    response = index.handler(event, lambda_context)
+
+    assert response["statusCode"] == 400
+    body = json.loads(response["body"])
+    assert body["message"] == "Request body is required"
 
 
 @mock_aws
