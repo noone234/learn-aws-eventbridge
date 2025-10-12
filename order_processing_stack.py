@@ -26,7 +26,7 @@ class OrderProcessingStack(Stack):
     - API Gateway with POST /orders endpoint
     - Lambda function to receive orders and publish to EventBridge
     - Custom EventBridge bus for order events
-    - Two Lambda functions to consume events (notifier and inventory)
+    - Three Lambda functions to consume events (notifier, inventory, and document)
     - SQS queue for email notifications
     """
 
@@ -95,6 +95,16 @@ class OrderProcessingStack(Stack):
             timeout=Duration.seconds(30),
         )
 
+        # Create Lambda function: document
+        document_fn = lambda_.Function(
+            self, "DocumentFunction",
+            function_name="document",
+            runtime=lambda_.Runtime.PYTHON_3_13,
+            handler="index.handler",
+            code=lambda_.Code.from_asset("lambdas/document"),
+            timeout=Duration.seconds(30),
+        )
+
         # Create EventBridge rules to route events
         notifier_rule = events.Rule(
             self, "NotifierRule",
@@ -117,6 +127,17 @@ class OrderProcessingStack(Stack):
             rule_name="route-to-inventory"
         )
         inventory_rule.add_target(targets.LambdaFunction(inventory_fn))
+
+        document_rule = events.Rule(
+            self, "DocumentRule",
+            event_bus=event_bus,
+            event_pattern=events.EventPattern(
+                source=["public.api"],
+                detail_type=["order.received.v1"]
+            ),
+            rule_name="route-to-document"
+        )
+        document_rule.add_target(targets.LambdaFunction(document_fn))
 
         # Create API Gateway
         api = apigateway.RestApi(
@@ -183,6 +204,18 @@ class OrderProcessingStack(Stack):
             comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
         )
         inventory_error_alarm.add_alarm_action(cw_actions.SnsAction(alarm_topic))
+
+        document_error_alarm = cloudwatch.Alarm(
+            self,
+            "DocumentErrorAlarm",
+            alarm_name="document-errors",
+            alarm_description="Alert when document Lambda has errors",
+            metric=document_fn.metric_errors(period=Duration.minutes(5)),
+            threshold=1,
+            evaluation_periods=1,
+            comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+        )
+        document_error_alarm.add_alarm_action(cw_actions.SnsAction(alarm_topic))
 
         # CloudWatch Alarm for SQS queue depth
         queue_depth_alarm = cloudwatch.Alarm(

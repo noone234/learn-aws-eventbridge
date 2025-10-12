@@ -35,18 +35,18 @@
 │  Event:                            │
 │  ├─ Source: public.api             │
 │  └─ DetailType: order.received.v1  │
-└──────┬─────────────────────┬───────┘
-       │                     │
-       │                     │
-       │ Rule 1              │ Rule 2
-       │ (route-to-notifier) │ (route-to-inventory)
-       │                     │
-       ▼                     ▼
-┌─────────────────┐   ┌──────────────────┐
-│ Lambda:         │   │ Lambda:          │
-│ notifier        │   │ inventory        │
-│ ├─ Logs event   │   │ └─ Logs event    │
-│ └─ Sends to SQS │   └──────────────────┘
+└──────┬─────────────────────┬───────────────────────┬───────┘
+       │                     │                       │
+       │                     │                       │
+       │ Rule 1              │ Rule 2                │ Rule 3
+       │ (route-to-notifier) │ (route-to-inventory)  │ (route-to-document)
+       │                     │                       │
+       ▼                     ▼                       ▼
+┌─────────────────┐   ┌──────────────────┐   ┌──────────────────┐
+│ Lambda:         │   │ Lambda:          │   │ Lambda:          │
+│ notifier        │   │ inventory        │   │ document         │
+│ ├─ Logs event   │   │ └─ Logs event    │   │ └─ Logs event    │
+│ └─ Sends to SQS │   └──────────────────┘   └──────────────────┘
 └────────┬────────┘
          │
          │ SendMessage
@@ -89,7 +89,7 @@
 - **Purpose**: Central event router for order events
 
 ### 4. EventBridge Rules
-Two rules route events to consumer Lambda functions:
+Three rules route events to consumer Lambda functions:
 
 #### Rule 1: route-to-notifier
 - **Target**: notifier Lambda
@@ -97,6 +97,10 @@ Two rules route events to consumer Lambda functions:
 
 #### Rule 2: route-to-inventory
 - **Target**: inventory Lambda
+- **Pattern**: Matches all `order.received.v1` events
+
+#### Rule 3: route-to-document
+- **Target**: document Lambda
 - **Pattern**: Matches all `order.received.v1` events
 
 ### 5. Lambda: notifier
@@ -116,7 +120,14 @@ Two rules route events to consumer Lambda functions:
   1. Logs event details (structured JSON logging)
   2. Simulates inventory integration processing
 
-### 7. SQS Queue
+### 7. Lambda: document
+- **Runtime**: Python 3.13
+- **Trigger**: EventBridge (order.received.v1 events)
+- **Actions**:
+  1. Logs event details (structured JSON logging)
+  2. Simulates document generation processing
+
+### 8. SQS Queue
 - **Name**: order-notifications-queue
 - **Type**: Standard
 - **Purpose**: Holds email notification messages for the Sales team
@@ -127,8 +138,8 @@ Two rules route events to consumer Lambda functions:
 ### CloudWatch Alarms
 All alarms publish to SNS topic: `order-processing-alarms`
 
-1. **Lambda Error Alarms** (3)
-   - Monitors errors for each Lambda function
+1. **Lambda Error Alarms** (4)
+   - Monitors errors for each Lambda function (order-receiver, notifier, inventory, document)
    - Threshold: ≥1 error in 5 minutes
    - Action: Send SNS notification
 
@@ -216,7 +227,7 @@ EventBridge acts as a central event bus, enabling:
 - Event filtering and routing
 
 ### 3. Fan-out Pattern
-One event triggers multiple independent consumers (notifier and inventory), allowing:
+One event triggers multiple independent consumers (notifier, inventory, and document), allowing:
 - Parallel processing
 - Independent scaling
 - Different failure modes
