@@ -75,9 +75,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     else:
         payload = body
 
-    log_structured(
-        "info", "Processing order", request_id=request_id, order_data=payload
-    )
+    log_structured("info", "Processing order", request_id=request_id, order_data=payload)
 
     # Publish event to EventBridge
     try:
@@ -113,9 +111,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         }
 
     # Return success response immediately (async pattern)
-    log_structured(
-        "info", "Order accepted for processing", request_id=request_id
-    )
+    log_structured("info", "Order accepted for processing", request_id=request_id)
     return {
         "statusCode": 202,
         "headers": {"Content-Type": "application/json"},
