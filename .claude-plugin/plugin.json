@@ -1,0 +1,28 @@
+{
+  "name": "learn-aws-eventbridge-plugin",
+  "version": "1.0.0",
+  "description": "Development workflows and best practices for the AWS EventBridge learning demo",
+  "author": "Christopher Wolfe",
+  "commands": [
+    {
+      "name": "check-quality",
+      "description": "Run all quality checks (ruff, black, mypy, tests)"
+    },
+    {
+      "name": "explain-architecture",
+      "description": "Show architecture overview and key design decisions"
+    },
+    {
+      "name": "test-api",
+      "description": "Generate example API requests for testing"
+    },
+    {
+      "name": "deploy-checklist",
+      "description": "Pre-deployment checklist and deployment command"
+    },
+    {
+      "name": "show-patterns",
+      "description": "Show coding patterns and best practices used in this project"
+    }
+  ]
+}
