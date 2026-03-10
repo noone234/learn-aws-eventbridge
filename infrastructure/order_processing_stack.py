@@ -328,6 +328,61 @@ class OrderProcessingStack(Stack):
             targets.CloudWatchLogGroup(s3_processor_rule_log_group)
         )
 
+        # =====================================================================
+        # PRESENTATION EXAMPLES — Content-based filtering patterns
+        # These rules are deployed but dormant (log-only targets). They
+        # demonstrate EventPattern syntax for the slide deck and are not
+        # part of the active demo flow.
+        # =====================================================================
+
+        # Example 1: Numeric matching — route high-value orders (amount > 10000)
+        # Uses the EventBridge numeric operator for range filtering.
+        # Slide: "Content-based filtering: numeric conditions"
+        high_value_queue = sqs.Queue(
+            self, "HighValueOrdersQueue", queue_name="high-value-orders"
+        )
+        high_value_rule = events.Rule(
+            self,
+            "HighValueOrderRule",
+            event_bus=event_bus,
+            event_pattern=events.EventPattern(
+                source=["public.api"],
+                detail_type=["order.received.v1"],
+                detail={
+                    "amount": [{"numeric": [">", 10000]}],
+                },
+            ),
+            rule_name="high-value-orders",
+        )
+        high_value_rule.add_target(targets.SqsQueue(high_value_queue))
+
+        # Example 2: Multiple conditions — priority + region filtering
+        # Combines string-set matching on two fields (implicit AND).
+        # Slide: "Content-based filtering: combining conditions"
+        priority_log_group = logs.LogGroup(
+            self,
+            "PriorityOrderLogGroup",
+            log_group_name="/aws/events/priority-orders",
+            retention=logs.RetentionDays.ONE_WEEK,
+        )
+        priority_rule = events.Rule(
+            self,
+            "PriorityOrderRule",
+            event_bus=event_bus,
+            event_pattern=events.EventPattern(
+                source=["public.api"],
+                detail_type=["order.received.v1"],
+                detail={
+                    "priority": ["high", "urgent"],
+                    "region": ["us-east-1", "us-west-2"],
+                },
+            ),
+            rule_name="priority-orders",
+        )
+        priority_rule.add_target(targets.CloudWatchLogGroup(priority_log_group))
+
+        # =====================================================================
+
         # Create CloudWatch Log Group for API Gateway access logs
         api_log_group = logs.LogGroup(
             self,
