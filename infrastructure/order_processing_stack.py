@@ -52,6 +52,7 @@ class OrderProcessingStack(Stack):
     - Three Lambda functions to consume events (notifier, inventory, and document)
     - SQS queue for email notifications
     - SQS queue with DLQ as buffer between EventBridge and inventory Lambda
+    - SNS topic for direct EventBridge-to-SNS notifications (no Lambda needed)
     """
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs: Any) -> None:
@@ -91,6 +92,17 @@ class OrderProcessingStack(Stack):
                 max_receive_count=3,
                 queue=inventory_dlq,
             ),
+        )
+
+        # Create SNS topic for direct customer order notifications
+        # This demonstrates the "new pattern": EventBridge → SNS directly,
+        # skipping Lambda when no message transformation is needed.
+        # Compare with the "old pattern": EventBridge → notifier Lambda → SQS.
+        customer_notifications_topic = sns.Topic(
+            self,
+            "CustomerOrderNotificationsTopic",
+            topic_name="customer-order-notifications",
+            display_name="Customer Order Notifications",
         )
 
         # Create Lambda function: order-receiver
@@ -179,6 +191,13 @@ class OrderProcessingStack(Stack):
             retention=logs.RetentionDays.ONE_WEEK,
         )
 
+        sns_direct_rule_log_group = logs.LogGroup(
+            self,
+            "SnsDirectRuleLogGroup",
+            log_group_name="/aws/events/route-to-sns-direct",
+            retention=logs.RetentionDays.ONE_WEEK,
+        )
+
         # Create EventBridge rules to route events
         notifier_rule = events.Rule(
             self,
@@ -217,6 +236,20 @@ class OrderProcessingStack(Stack):
         )
         document_rule.add_target(targets.LambdaFunction(document_fn))
         document_rule.add_target(targets.CloudWatchLogGroup(document_rule_log_group))
+
+        # Direct EventBridge → SNS rule (no Lambda intermediary)
+        # CDK automatically grants EventBridge permission to publish to SNS.
+        sns_direct_rule = events.Rule(
+            self,
+            "SnsDirectRule",
+            event_bus=event_bus,
+            event_pattern=events.EventPattern(
+                source=["public.api"], detail_type=["order.received.v1"]
+            ),
+            rule_name="route-to-sns-direct",
+        )
+        sns_direct_rule.add_target(targets.SnsTopic(customer_notifications_topic))
+        sns_direct_rule.add_target(targets.CloudWatchLogGroup(sns_direct_rule_log_group))
 
         # Create CloudWatch Log Group for API Gateway access logs
         api_log_group = logs.LogGroup(
@@ -380,4 +413,12 @@ class OrderProcessingStack(Stack):
             value=alarm_topic.topic_arn,
             description="SNS topic ARN for CloudWatch alarms",
             export_name="OrderProcessingAlarmTopicArn",
+        )
+
+        CfnOutput(
+            self,
+            "CustomerNotificationsTopicArn",
+            value=customer_notifications_topic.topic_arn,
+            description="SNS topic ARN for direct customer order notifications",
+            export_name="CustomerOrderNotificationsTopicArn",
         )
