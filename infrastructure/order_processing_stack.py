@@ -36,6 +36,9 @@ from aws_cdk import (
     aws_sns as sns,
 )
 from aws_cdk import (
+    aws_s3 as s3,
+)
+from aws_cdk import (
     aws_sqs as sqs,
 )
 from constructs import Construct
@@ -53,6 +56,8 @@ class OrderProcessingStack(Stack):
     - SQS queue for email notifications
     - SQS queue with DLQ as buffer between EventBridge and inventory Lambda
     - SNS topic for direct EventBridge-to-SNS notifications (no Lambda needed)
+    - S3 bucket for order documents with EventBridge notifications
+    - Lambda to process S3 document uploads and publish downstream events
     """
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs: Any) -> None:
@@ -103,6 +108,32 @@ class OrderProcessingStack(Stack):
             "CustomerOrderNotificationsTopic",
             topic_name="customer-order-notifications",
             display_name="Customer Order Notifications",
+        )
+
+        # Create S3 bucket for order documents (EDI, BOL, POD)
+        # EventBridge notifications are enabled so S3 sends ObjectCreated
+        # events to the *default* EventBridge bus automatically.
+        documents_bucket = s3.Bucket(
+            self,
+            "OrderDocumentsBucket",
+            bucket_name=f"order-documents-{Stack.of(self).account}",
+            event_bridge_enabled=True,
+            lifecycle_rules=[
+                s3.LifecycleRule(
+                    id="expire-test-uploads",
+                    prefix="test/",
+                    expiration=Duration.days(7),
+                ),
+                s3.LifecycleRule(
+                    id="archive-old-documents",
+                    transitions=[
+                        s3.Transition(
+                            storage_class=s3.StorageClass.INFREQUENT_ACCESS,
+                            transition_after=Duration.days(90),
+                        )
+                    ],
+                ),
+            ],
         )
 
         # Create Lambda function: order-receiver
@@ -169,6 +200,26 @@ class OrderProcessingStack(Stack):
             timeout=Duration.seconds(30),
         )
 
+        # Create Lambda function: document-processor (S3 upload handler)
+        document_processor_fn = lambda_.Function(
+            self,
+            "DocumentProcessorFunction",
+            function_name="document-processor",
+            runtime=lambda_.Runtime.PYTHON_3_13,
+            handler="index.handler",
+            code=lambda_.Code.from_asset("lambdas/document_processor"),
+            environment={
+                "EVENT_BUS_NAME": event_bus.event_bus_name,
+            },
+            timeout=Duration.seconds(30),
+        )
+
+        # Grant document-processor read access to the S3 bucket
+        documents_bucket.grant_read(document_processor_fn)
+
+        # Grant document-processor permission to publish to the custom bus
+        event_bus.grant_put_events_to(document_processor_fn)
+
         # Create CloudWatch Log Groups for EventBridge rules
         notifier_rule_log_group = logs.LogGroup(
             self,
@@ -195,6 +246,13 @@ class OrderProcessingStack(Stack):
             self,
             "SnsDirectRuleLogGroup",
             log_group_name="/aws/events/route-to-sns-direct",
+            retention=logs.RetentionDays.ONE_WEEK,
+        )
+
+        s3_processor_rule_log_group = logs.LogGroup(
+            self,
+            "S3ProcessorRuleLogGroup",
+            log_group_name="/aws/events/route-s3-to-processor",
             retention=logs.RetentionDays.ONE_WEEK,
         )
 
@@ -250,6 +308,25 @@ class OrderProcessingStack(Stack):
         )
         sns_direct_rule.add_target(targets.SnsTopic(customer_notifications_topic))
         sns_direct_rule.add_target(targets.CloudWatchLogGroup(sns_direct_rule_log_group))
+
+        # S3 → default EventBridge bus → document-processor Lambda
+        # S3 EventBridge notifications always go to the default bus, not custom buses.
+        s3_processor_rule = events.Rule(
+            self,
+            "S3ProcessorRule",
+            event_pattern=events.EventPattern(
+                source=["aws.s3"],
+                detail_type=["Object Created"],
+                detail={
+                    "bucket": {"name": [documents_bucket.bucket_name]},
+                },
+            ),
+            rule_name="route-s3-to-processor",
+        )
+        s3_processor_rule.add_target(targets.LambdaFunction(document_processor_fn))
+        s3_processor_rule.add_target(
+            targets.CloudWatchLogGroup(s3_processor_rule_log_group)
+        )
 
         # Create CloudWatch Log Group for API Gateway access logs
         api_log_group = logs.LogGroup(
@@ -347,6 +424,18 @@ class OrderProcessingStack(Stack):
         )
         document_error_alarm.add_alarm_action(cw_actions.SnsAction(alarm_topic))
 
+        document_processor_error_alarm = cloudwatch.Alarm(
+            self,
+            "DocumentProcessorErrorAlarm",
+            alarm_name="document-processor-errors",
+            alarm_description="Alert when document-processor Lambda has errors",
+            metric=document_processor_fn.metric_errors(period=Duration.minutes(5)),
+            threshold=1,
+            evaluation_periods=1,
+            comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+        )
+        document_processor_error_alarm.add_alarm_action(cw_actions.SnsAction(alarm_topic))
+
         # CloudWatch Alarm for SQS queue depth
         queue_depth_alarm = cloudwatch.Alarm(
             self,
@@ -421,4 +510,12 @@ class OrderProcessingStack(Stack):
             value=customer_notifications_topic.topic_arn,
             description="SNS topic ARN for direct customer order notifications",
             export_name="CustomerOrderNotificationsTopicArn",
+        )
+
+        CfnOutput(
+            self,
+            "OrderDocumentsBucketName",
+            value=documents_bucket.bucket_name,
+            description="S3 bucket for order document uploads",
+            export_name="OrderDocumentsBucketName",
         )
