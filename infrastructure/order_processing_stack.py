@@ -27,6 +27,9 @@ from aws_cdk import (
     aws_lambda as lambda_,
 )
 from aws_cdk import (
+    aws_lambda_event_sources as lambda_event_sources,
+)
+from aws_cdk import (
     aws_logs as logs,
 )
 from aws_cdk import (
@@ -48,6 +51,7 @@ class OrderProcessingStack(Stack):
     - Custom EventBridge bus for order events
     - Three Lambda functions to consume events (notifier, inventory, and document)
     - SQS queue for email notifications
+    - SQS queue with DLQ as buffer between EventBridge and inventory Lambda
     """
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs: Any) -> None:
@@ -68,6 +72,26 @@ class OrderProcessingStack(Stack):
 
         # Create SQS queue for email notifications
         email_queue = sqs.Queue(self, "EmailQueue", queue_name="order-notifications-queue")
+
+        # Create SQS DLQ for failed inventory messages
+        inventory_dlq = sqs.Queue(
+            self,
+            "InventoryDLQ",
+            queue_name="inventory-processing-dlq",
+            retention_period=Duration.days(14),
+        )
+
+        # Create SQS queue for inventory processing (buffer pattern)
+        inventory_queue = sqs.Queue(
+            self,
+            "InventoryQueue",
+            queue_name="inventory-processing-queue",
+            visibility_timeout=Duration.seconds(180),
+            dead_letter_queue=sqs.DeadLetterQueue(
+                max_receive_count=3,
+                queue=inventory_dlq,
+            ),
+        )
 
         # Create Lambda function: order-receiver
         order_receiver_fn = lambda_.Function(
@@ -103,7 +127,7 @@ class OrderProcessingStack(Stack):
         # Grant permission to send messages to SQS
         email_queue.grant_send_messages(notifier_fn)
 
-        # Create Lambda function: inventory
+        # Create Lambda function: inventory (triggered by SQS buffer queue)
         inventory_fn = lambda_.Function(
             self,
             "InventoryFunction",
@@ -112,6 +136,14 @@ class OrderProcessingStack(Stack):
             handler="index.handler",
             code=lambda_.Code.from_asset("lambdas/inventory"),
             timeout=Duration.seconds(30),
+        )
+
+        # Wire inventory Lambda to poll from the SQS buffer queue
+        inventory_fn.add_event_source(
+            lambda_event_sources.SqsEventSource(
+                inventory_queue,
+                batch_size=10,
+            )
         )
 
         # Create Lambda function: document
@@ -171,7 +203,7 @@ class OrderProcessingStack(Stack):
             ),
             rule_name="route-to-inventory",
         )
-        inventory_rule.add_target(targets.LambdaFunction(inventory_fn))
+        inventory_rule.add_target(targets.SqsQueue(inventory_queue))
         inventory_rule.add_target(targets.CloudWatchLogGroup(inventory_rule_log_group))
 
         document_rule = events.Rule(
@@ -296,6 +328,36 @@ class OrderProcessingStack(Stack):
             comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
         )
         queue_depth_alarm.add_alarm_action(cw_actions.SnsAction(alarm_topic))
+
+        # CloudWatch Alarm for inventory queue depth
+        inventory_queue_depth_alarm = cloudwatch.Alarm(
+            self,
+            "InventoryQueueDepthAlarm",
+            alarm_name="inventory-queue-depth",
+            alarm_description="Alert when inventory queue has too many messages",
+            metric=inventory_queue.metric_approximate_number_of_messages_visible(
+                period=Duration.minutes(5)
+            ),
+            threshold=100,
+            evaluation_periods=2,
+            comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+        )
+        inventory_queue_depth_alarm.add_alarm_action(cw_actions.SnsAction(alarm_topic))
+
+        # CloudWatch Alarm for inventory DLQ (any message means processing failures)
+        inventory_dlq_alarm = cloudwatch.Alarm(
+            self,
+            "InventoryDLQAlarm",
+            alarm_name="inventory-dlq-messages",
+            alarm_description="Alert when messages land in inventory dead-letter queue",
+            metric=inventory_dlq.metric_approximate_number_of_messages_visible(
+                period=Duration.minutes(5)
+            ),
+            threshold=1,
+            evaluation_periods=1,
+            comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+        )
+        inventory_dlq_alarm.add_alarm_action(cw_actions.SnsAction(alarm_topic))
 
         # Add cost allocation tags
         Tags.of(self).add("Project", "OrderProcessing")
