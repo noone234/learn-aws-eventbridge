@@ -1,0 +1,6 @@
+Same structure as the 1st event,
+but purpose: "update" — triggers only 3 rules.
+The inventory SQS queue never receives this event,
+because the route-to-inventory rule filters it out with anything-but: ["update"].
+
+Covers objective #3 — EventBridge shielding inventory from unnecessary updates

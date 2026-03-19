@@ -1,0 +1,26 @@
+{
+    "version": "0",
+    "id": "demo-s3-event-001",
+    "detail-type": "Object Created",
+    "source": "aws.s3",
+    "account": "123456789012",
+    "time": "2026-03-18T14:30:00Z",
+    "region": "us-east-1",
+    "resources": [],
+    "detail": {
+        "version": "0",
+        "bucket": {
+            "name": "<YOUR_DOCUMENTS_BUCKET_NAME>"
+        },
+        "object": {
+            "key": "inbound/ORD-2501/invoice.edi",
+            "size": 4096,
+            "etag": "d41d8cd98f00b204e9800998ecf8427e",
+            "sequencer": "006225AD48B0C42127"
+        },
+        "request-id": "demo-request-001",
+        "requester": "123456789012",
+        "source-ip-address": "203.0.113.42",
+        "reason": "PutObject"
+    }
+}

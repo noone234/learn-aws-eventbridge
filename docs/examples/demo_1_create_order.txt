@@ -1,0 +1,6 @@
+This single event triggers all 4 rules simultaneously:
+  - route-to-notifier → notifier Lambda → SQS (old pattern)
+  - route-to-sns-direct → SNS topic directly (new pattern)
+  - route-to-inventory → SQS buffer → inventory Lambda (purpose is "create", passes the anything-but: update filter)
+  - route-to-document → document Lambda
+

@@ -10,14 +10,14 @@
     "detail": {
         "direction": "INBOUND",
         "partnership": {
-            "sender": "FastLane Logistics",
+            "sender": "FastLane Logistics LLC",
             "receiver": "ModalView"
         },
-        "purpose": "create",
+        "purpose": "update",
         "order": {
             "type": "delivery_one_way",
             "market": "philadelphia",
-            "imcCompany": "FastLane Logistics",
+            "imcCompany": "FastLane Logistics LLC",
             "referenceNumber": "12345678"
         }
     }
