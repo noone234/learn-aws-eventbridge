@@ -5,6 +5,7 @@ from typing import Any
 from aws_cdk import (
     CfnOutput,
     Duration,
+    SecretValue,
     Stack,
     Tags,
 )
@@ -249,6 +250,13 @@ class OrderProcessingStack(Stack):
             retention=logs.RetentionDays.ONE_WEEK,
         )
 
+        webhook_rule_log_group = logs.LogGroup(
+            self,
+            "WebhookRuleLogGroup",
+            log_group_name="/aws/events/route-to-webhook",
+            retention=logs.RetentionDays.ONE_WEEK,
+        )
+
         s3_processor_rule_log_group = logs.LogGroup(
             self,
             "S3ProcessorRuleLogGroup",
@@ -308,6 +316,44 @@ class OrderProcessingStack(Stack):
         )
         sns_direct_rule.add_target(targets.SnsTopic(customer_notifications_topic))
         sns_direct_rule.add_target(targets.CloudWatchLogGroup(sns_direct_rule_log_group))
+
+        # EventBridge → API Destination (external webhook)
+        # Demonstrates calling an external HTTP endpoint without a Lambda intermediary.
+        # Replace the placeholder URL with your webhook.site UUID before deploying.
+        webhook_connection = events.Connection(
+            self,
+            "WebhookConnection",
+            authorization=events.Authorization.api_key(
+                "x-api-key", SecretValue.unsafe_plain_text("placeholder")
+            ),
+            connection_name="webhook-site-connection",
+            description="Connection for webhook.site demo (no real auth needed)",
+        )
+
+        webhook_destination = events.ApiDestination(
+            self,
+            "WebhookDestination",
+            connection=webhook_connection,
+            endpoint="https://webhook.site/your-uuid-here",
+            api_destination_name="webhook-site-destination",
+            description="Sends created-order events to webhook.site for demo",
+            http_method=events.HttpMethod.POST,
+            rate_limit_per_second=1,
+        )
+
+        webhook_rule = events.Rule(
+            self,
+            "WebhookRule",
+            event_bus=event_bus,
+            event_pattern=events.EventPattern(
+                source=["public.api"],
+                detail_type=["order.received.v1"],
+                detail={"purpose": ["create"]},
+            ),
+            rule_name="route-to-webhook",
+        )
+        webhook_rule.add_target(targets.ApiDestination(webhook_destination))
+        webhook_rule.add_target(targets.CloudWatchLogGroup(webhook_rule_log_group))
 
         # S3 → default EventBridge bus → document-processor Lambda
         # S3 EventBridge notifications always go to the default bus, not custom buses.
