@@ -9,6 +9,7 @@
         "type": "delivery_one_way",
         "market": "philadelphia",
         "imcCompany": "FastLane Logistics LLC",
-        "referenceNumber": "ACM-20260318-001"
+        "referenceNumber": "ACM-20260318-001",
+        "price": 5000
     }
 }

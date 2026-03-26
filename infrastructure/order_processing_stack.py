@@ -381,7 +381,7 @@ class OrderProcessingStack(Stack):
         # part of the active demo flow.
         # =====================================================================
 
-        # Example 1: Numeric matching — route high-value orders (amount > 10000)
+        # Example 1: Numeric matching — route high-value orders (price > 10000)
         # Uses the EventBridge numeric operator for range filtering.
         # Slide: "Content-based filtering: numeric conditions"
         high_value_queue = sqs.Queue(
@@ -395,7 +395,7 @@ class OrderProcessingStack(Stack):
                 source=["public.api"],
                 detail_type=["order.received.v1"],
                 detail={
-                    "amount": [{"numeric": [">", 10000]}],
+                    "price": [{"numeric": [">", 10000]}],
                 },
             ),
             rule_name="high-value-orders",
