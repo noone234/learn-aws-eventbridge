@@ -4,8 +4,9 @@ import importlib.util
 import json
 import os
 import sys
+from collections.abc import Generator
 from pathlib import Path
-from typing import Any, Generator
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import boto3
@@ -38,7 +39,7 @@ def _reset_clients(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture
-def aws_mocks() -> Generator[None, None, None]:
+def aws_mocks() -> Generator[None]:
     """Provide moto mock context and reset Lambda clients inside it."""
     with mock_aws():
         # Reset again inside the mock so clients bind to moto
