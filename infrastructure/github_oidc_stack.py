@@ -2,8 +2,7 @@
 
 from typing import Any
 
-from aws_cdk import Duration, Stack
-from aws_cdk import aws_iam as iam
+from aws_cdk import Duration, Stack, aws_iam as iam
 from constructs import Construct
 
 
